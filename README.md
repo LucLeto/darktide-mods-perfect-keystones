@@ -1,7 +1,7 @@
 # darktide-mods-perfect-keystones
 Perfect Keystones adds a small ring around the crosshair that tracks your class **keystone**: how long a timed effect still runs, how many stacks you hold and when the next one will expire, how far a resource has built up before an activation, Until Death's protection and cooldown, and Lone Wolf's time to the next Blitz charge. The game's buff bar shows the same effects as small icons at the edge of the screen; the ring puts them where you are already looking.
 
-It covers all 25 keystones of the seven classes. 23 of them draw a ring; Go Get 'Em! and Unleashed Brutality are permanent companion specialisations with nothing to count down, so they deliberately draw nothing.
+It tracks 23 keystones across all seven classes. Go Get 'Em! and Unleashed Brutality, the Arbitrator's Cyber-Mastiff keystones, have nothing to track and are ignored.
 
 The mod is purely visual. It never changes buffs, procs, cooldowns or inputs, and it hooks no game function: it only reads your character's buffs, its talent resource and inventory, and your Blitz charges.
 
@@ -51,7 +51,7 @@ Every value is read from the game while you play: stack counts, maximums and dur
 | Hybrid | A resource builds up; once the timed active buff runs, its remaining time takes priority and the rebuilt resource stays hidden until it ends | Weapons Specialist, Blazing Piety, Inexorable Judgement, Terminus Warrant, Adrenaline Frenzy, Power Overload |
 | Proc cooldown | A protection countdown, then its cooldown | Until Death |
 | Next-charge replenishment | The time until the next automatic Blitz charge | Lone Wolf |
-| No ring | Permanent specialisation with nothing to count | Go Get 'Em!, Unleashed Brutality |
+| Ignored | Cyber-Mastiff keystones with nothing to track | Go Get 'Em!, Unleashed Brutality |
 
 ### Keystones
 
@@ -74,7 +74,7 @@ Every value is read from the game while you play: stack counts, maximums and dur
 | Arbitrator | Terminus Warrant | The active melee or ranged effect's remaining time; otherwise the stacks stored for your next weapon switch | With an effect or stacks |
 | Arbitrator | Forceful | Held stacks (10); the next stack's share warns before it decays | With stacks |
 | Arbitrator | Lone Wolf | Outer ring: the time until your next automatic Blitz charge (45 s for grenades, 90 s for the Shock Mine) | While charges are missing |
-| Arbitrator | Go Get 'Em!, Unleashed Brutality | Nothing, by design | Never |
+| Arbitrator | Go Get 'Em!, Unleashed Brutality | Nothing: Cyber-Mastiff keystones with nothing to track | Never |
 | Hive Scum | Vulture's Mark | Held stacks (3); the filled segments turn red-orange one by one as the shared timer (8 s, or 12 s with the upgrade) runs down | With stacks |
 | Hive Scum | Adrenaline Frenzy | Build-up stacks (30) before Frenzy; while Frenzy runs, its remaining time | With stacks or Frenzy |
 | Hive Scum | Chemical Dependency | Held stacks (3 at 90 s each, or 4 at 60 s with the upgrade); the next stack's share warns | With stacks |
