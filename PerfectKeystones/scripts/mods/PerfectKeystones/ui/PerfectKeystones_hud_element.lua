@@ -6,10 +6,11 @@
 --
 -- Segments light clockwise from the top, so a full ring that empties loses its segments
 -- counter-clockwise back toward 12 o'clock. Lit segments use the active colour, or the cooldown
--- colour for a cooldown or recharge; the share of the next expiring stack, or the whole filled area
--- for stacks with a shared timer, blends toward the expiring colour as its timer runs down, and a
--- timed active effect turns the expiring colour for the last part of its duration set by the
--- near-expiry threshold. Unlit segments use the unfilled colour. Each ring pulses briefly when the
+-- colour for a cooldown or recharge; the share of the next expiring stack blends toward the
+-- expiring colour as its timer runs down, stacks with a shared timer turn to the expiring colour
+-- segment by segment until the whole filled area has turned as they expire, and a timed active
+-- effect turns the expiring colour for the last part of its duration set by the near-expiry
+-- threshold. Unlit segments use the unfilled colour. Each ring pulses briefly when the
 -- tracker reports a transition, and can show its stack count and remaining seconds next to the
 -- rings. Both rings keep their geometry when the other one hides, and follow the crosshair together.
 --
@@ -459,9 +460,12 @@ end
 --- Colours a ring's segments for its presentation state, when anything drawn changed since the
 -- last call.
 -- Lit segments before the highlight use the base colour (the expiring colour in a timed active
--- effect's near-expiry part); highlighted lit segments use the active colour blended toward the
--- expiring colour by the state's elapsed timer fraction, in `COLOR_STEPS` steps; unlit segments use
--- the unfilled colour.
+-- effect's near-expiry part); unlit segments use the unfilled colour. The highlight depends on its
+-- mode: the next expiring stack's share uses the active colour blended toward the expiring colour by
+-- the state's elapsed timer fraction, in `COLOR_STEPS` steps; with a shared timer, the lit segments
+-- turn to the expiring colour one after another, from the end of the filled area back toward 12
+-- o'clock, so the share of turned segments is the elapsed fraction and the last one turns as the
+-- stacks expire. More stacks light more segments, which then turn faster.
 -- tab: slot per-ring display state
 -- tab: ring_state presentation state
 HudElementPerfectKeystones._refresh_ring = function (self, slot, ring_state)
@@ -473,11 +477,13 @@ HudElementPerfectKeystones._refresh_ring = function (self, slot, ring_state)
     local expiry = ring_state.expiry
 
     if ring_state.highlight ~= HIGHLIGHT_NONE and expiry and lit > 0 then
-        step = math_floor(math_clamp(expiry, 0, 1) * COLOR_STEPS + 0.5)
+        local elapsed = math_clamp(expiry, 0, 1)
 
         if ring_state.highlight == HIGHLIGHT_SHARED then
-            highlight_start = 1
+            highlight_start = lit + 1 - math_floor(elapsed * lit)
+            step = COLOR_STEPS
         else
+            step = math_floor(elapsed * COLOR_STEPS + 0.5)
             highlight_start = _lit_count(ring_state.highlight_from) + 1
 
             if highlight_start > lit then

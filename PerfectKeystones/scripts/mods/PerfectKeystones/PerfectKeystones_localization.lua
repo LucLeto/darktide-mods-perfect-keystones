@@ -90,18 +90,18 @@ local STACK_DECAY_TOOLTIP = {
 
 --- Tooltip of the keystones whose stacks share one timer.
 local STACK_SHARED_TOOLTIP = {
-    en = "Held stacks. They share one timer: the whole filled area turns toward the expiring color as it runs down, and a refresh restores it without changing the fill.",
-    fr = "Cumuls détenus. Ils partagent un même délai : toute la zone remplie vire vers la couleur d'expiration à mesure qu'il s'écoule, et un rafraîchissement la rétablit sans changer le remplissage.",
-    de = "Gehaltene Stapel. Sie teilen sich einen Timer: Die gesamte gefüllte Fläche färbt sich mit ablaufendem Timer zur Ablauffarbe, eine Auffrischung setzt sie zurück, ohne die Füllung zu ändern.",
-    it = "Cumuli posseduti. Condividono un unico timer: tutta l'area piena vira verso il colore di scadenza mentre scorre, e un rinnovo la ripristina senza cambiare il riempimento.",
-    es = "Acumulaciones activas. Comparten un temporizador: toda el área llena cambia hacia el color de caducidad mientras corre, y una renovación la restablece sin cambiar el relleno.",
-    pl = "Posiadane ładunki. Mają wspólny czas: cały wypełniony obszar zmienia kolor na kolor wygasania w miarę jego upływu, a odświeżenie przywraca kolor bez zmiany wypełnienia.",
-    ["pt-br"] = "Acúmulos ativos. Eles compartilham um cronômetro: toda a área preenchida muda para a cor de expiração enquanto ele corre, e uma renovação a restaura sem mudar o preenchimento.",
-    ru = "Текущие заряды. У них общий таймер: вся заполненная часть по мере его хода окрашивается в цвет истечения, а обновление возвращает цвет, не меняя заполнения.",
-    ja = "保持中のスタック。スタックは1つのタイマーを共有し、経過につれて塗りつぶし部分全体が期限切れ色へ変わります。更新されると塗りつぶしはそのまま色が戻ります。",
-    ko = "보유 중첩입니다. 모든 중첩이 하나의 타이머를 공유하여, 타이머가 흐를수록 채워진 부분 전체가 만료 색상으로 바뀌고 갱신되면 채움은 그대로 두고 색상만 돌아옵니다.",
-    ["zh-cn"] = "当前层数。所有层共享一个计时器：随计时推进，整个填充部分逐渐变为过期颜色；刷新后颜色恢复，填充不变。",
-    ["zh-tw"] = "目前層數。所有層共用一個計時器：隨計時推進，整個填充部分逐漸變為過期顏色；刷新後顏色恢復，填充不變。",
+    en = "Held stacks. They share one timer: the filled segments turn to the expiring color one after another as it runs down, and the stacks are lost when all have turned. A refresh turns them back without changing the fill.",
+    fr = "Cumuls détenus. Ils partagent un même délai : les segments remplis prennent un à un la couleur d'expiration à mesure qu'il s'écoule, et les cumuls sont perdus lorsque tous ont changé. Un rafraîchissement rétablit la couleur sans changer le remplissage.",
+    de = "Gehaltene Stapel. Sie teilen sich einen Timer: Die gefüllten Segmente nehmen mit ablaufendem Timer nacheinander die Ablauffarbe an, und die Stapel gehen verloren, sobald alle umgefärbt sind. Eine Auffrischung setzt die Farbe zurück, ohne die Füllung zu ändern.",
+    it = "Cumuli posseduti. Condividono un unico timer: i segmenti pieni prendono uno dopo l'altro il colore di scadenza mentre scorre, e i cumuli si perdono quando sono cambiati tutti. Un rinnovo ripristina il colore senza cambiare il riempimento.",
+    es = "Acumulaciones activas. Comparten un temporizador: los segmentos llenos toman uno tras otro el color de caducidad mientras corre, y las acumulaciones se pierden cuando han cambiado todos. Una renovación restablece el color sin cambiar el relleno.",
+    pl = "Posiadane ładunki. Mają wspólny czas: wypełnione segmenty jeden po drugim przyjmują kolor wygasania w miarę jego upływu, a ładunki przepadają, gdy zmienią się wszystkie. Odświeżenie przywraca kolor bez zmiany wypełnienia.",
+    ["pt-br"] = "Acúmulos ativos. Eles compartilham um cronômetro: os segmentos preenchidos assumem um a um a cor de expiração enquanto ele corre, e os acúmulos são perdidos quando todos tiverem mudado. Uma renovação restaura a cor sem mudar o preenchimento.",
+    ru = "Текущие заряды. У них общий таймер: заполненные сегменты по мере его хода один за другим окрашиваются в цвет истечения, и заряды теряются, когда окрасятся все. Обновление возвращает цвет, не меняя заполнения.",
+    ja = "保持中のスタック。スタックは1つのタイマーを共有し、経過につれて塗りつぶされたセグメントが1つずつ期限切れ色に変わり、すべて変わるとスタックが失われます。更新されると塗りつぶしはそのまま色が戻ります。",
+    ko = "보유 중첩입니다. 모든 중첩이 하나의 타이머를 공유하여, 타이머가 흐를수록 채워진 조각이 하나씩 만료 색상으로 바뀌고 모두 바뀌면 중첩을 잃습니다. 갱신되면 채움은 그대로 두고 색상만 돌아옵니다.",
+    ["zh-cn"] = "当前层数。所有层共享一个计时器：随计时推进，已填充的分段逐个变为过期颜色，全部变色时层数失去。刷新后颜色恢复，填充不变。",
+    ["zh-tw"] = "目前層數。所有層共用一個計時器：隨計時推進，已填充的分段逐個變為過期顏色，全部變色時層數失去。刷新後顏色恢復，填充不變。",
 }
 
 --- Tooltip of the keystones that show strength stacks below their maximum.

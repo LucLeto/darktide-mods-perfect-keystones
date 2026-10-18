@@ -14,7 +14,8 @@
 -- `countdown` whether the fill is a timed active effect's remaining time, which the near-expiry
 -- threshold applies to;
 -- `highlight` `HIGHLIGHT_NONE`, `HIGHLIGHT_NEXT` (only the next expiring stack's share changes
--- colour) or `HIGHLIGHT_SHARED` (every lit segment changes colour);
+-- colour) or `HIGHLIGHT_SHARED` (the lit segments turn to the expiring colour one after another,
+-- so the whole filled area has turned as the shared timer ends);
 -- `highlight_from` fill fraction from which the highlight starts;
 -- `expiry` elapsed fraction from 0 to 1 of the timer behind the highlight, nil without valid timing;
 -- `stacks`, `max_stacks` held count and effective maximum, nil in timed phases, so a label can never
@@ -303,8 +304,9 @@ Kinds.stack_decay = function (tracked, state, ctx)
     _timed_stacks(tracked, state, ctx, HIGHLIGHT_NEXT)
 end
 
---- `stack_shared`: stacks that share one refreshable timer. The held stacks stay filled; the whole
--- filled area turns toward the expiring colour together.
+--- `stack_shared`: stacks that share one refreshable timer. The held stacks stay filled; the filled
+-- segments turn to the expiring colour one after another as the timer runs down, so the whole
+-- filled area has turned when the stacks expire, and a refresh turns them back.
 -- tab: tracked compiled tracking entry
 -- tab: state presentation state
 -- tab: ctx frame context

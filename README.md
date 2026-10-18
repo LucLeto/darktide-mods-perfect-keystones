@@ -15,7 +15,7 @@ The rings sit around the crosshair, made of the same square segments as Perfect 
 | --- | --- |
 | Timed active effect | Full purple ring that empties counter-clockwise; it turns red-orange for the last 25 % of the duration, and fills again when the effect is refreshed |
 | Stacks that expire one at a time | Each held stack fills its share of the ring; only the share of the **next** stack to expire turns from purple toward red-orange as its timer runs down. The filled area only shrinks when a stack is actually lost |
-| Stacks with one shared timer | Each held stack fills its share; the **whole** filled area turns from purple toward red-orange as the shared timer runs down, and turns purple again on a refresh |
+| Stacks with one shared timer | Each held stack fills its share; as the shared timer runs down, the filled segments turn red-orange **one after another**, from the end of the filled area back toward 12 o'clock. When the last one has turned, the stacks are lost. A refresh turns them purple again; with more stacks, more segments are lit and they turn faster |
 | Stacks or resources without a timer | Each held stack fills its share, in whole steps |
 | Cooldown, next Blitz charge | Light blue ring that empties counter-clockwise |
 | Nothing to show | Hidden |
@@ -61,8 +61,8 @@ Every value is read from the game while you play: stack counts, maximums and dur
 | Zealot | Blazing Piety | Fury (25) before activation; while the personal buff runs, its remaining time | With Fury or the buff |
 | Zealot | Martyrdom | Stacks from missing health segments against the keystone's maximum of 5, so a full ring always means full strength | With stacks |
 | Zealot | Inexorable Judgement | Held Momentum (20); while active, its remaining time (6 s, or 10 s with the upgrade), however many stacks it was activated with | With Momentum or while active |
-| Ogryn | Heavy Hitter | Held stacks (8); the whole filled area warns as the shared timer runs down | With stacks |
-| Ogryn | Burst Limiter Override | Held damage stacks from ranged kills (10); the whole filled area warns as the shared timer runs down | With stacks |
+| Ogryn | Heavy Hitter | Held stacks (8); the filled segments turn red-orange one by one as the shared timer runs down | With stacks |
+| Ogryn | Burst Limiter Override | Held damage stacks from ranged kills (10); the filled segments turn red-orange one by one as the shared timer runs down | With stacks |
 | Ogryn | Feel No Pain | Strength stacks (10) in whole steps | Below the maximum, including 0 (or always) |
 | Psyker | Warp Siphon | Held Warp Charges (4, or 6 with the upgrade); the next charge's share warns before it decays | With charges |
 | Psyker | Disrupt Destiny | Held stacks (15, or 25 with the upgrade; 5 s or 10 s per stack); the next stack's share warns | With stacks |
@@ -72,7 +72,7 @@ Every value is read from the game while you play: stack counts, maximums and dur
 | Arbitrator | Forceful | Held stacks (10); the next stack's share warns before it decays | With stacks |
 | Arbitrator | Lone Wolf | Outer ring: the time until your next automatic Blitz charge (45 s for grenades, 90 s for the Shock Mine) | While charges are missing |
 | Arbitrator | Go Get 'Em!, Unleashed Brutality | Nothing, by design | Never |
-| Hive Scum | Vulture's Mark | Held stacks (3); the whole filled area warns as the shared timer (8 s, or 12 s with the upgrade) runs down | With stacks |
+| Hive Scum | Vulture's Mark | Held stacks (3); the filled segments turn red-orange one by one as the shared timer (8 s, or 12 s with the upgrade) runs down | With stacks |
 | Hive Scum | Adrenaline Frenzy | Build-up stacks (30) before Frenzy; while Frenzy runs, its remaining time | With stacks or Frenzy |
 | Hive Scum | Chemical Dependency | Held stacks (3 at 90 s each, or 4 at 60 s with the upgrade); the next stack's share warns | With stacks |
 | Skitarius | Redline Capacitors | Held stacks (4, or 5 with the upgrade); the next stack's share warns before it decays | With stacks |
@@ -162,7 +162,7 @@ One group per class, with a checkbox for each keystone that draws a ring, all on
 | Hive Scum | Vulture's Mark, Adrenaline Frenzy, Chemical Dependency | |
 | Skitarius | Redline Capacitors, Power Overload, Flensing Protocols | `Visibility` (Below maximum / Always) for Flensing Protocols |
 
-The keystone and class names in these groups come from the game's own localization, so they match your talent tree in your game language.
+The extra settings sit indented under the checkbox of the keystone they belong to, and are hidden while that keystone is switched off. The keystone and class names in these groups come from the game's own localization, so they match your talent tree in your game language.
 
 `Miscellaneous` group:
 
@@ -174,7 +174,7 @@ Every setting applies immediately. Changing a keystone's settings only changes w
 
 ### Colors
 
-Each colour has its own picker with an alpha channel, from 0 (invisible) to 255 (fully opaque). The expiring colour is reached gradually: a stack's share moves from the active colour toward it in 32 steps over its timer, so it is fully red-orange just as the stack expires. The near-expiry warning of a timed active effect switches to it in one step.
+Each colour has its own picker with an alpha channel, from 0 (invisible) to 255 (fully opaque). The expiring colour is reached gradually. For stacks that expire one at a time, the next stack's share moves from the active colour toward it in 32 steps over its timer, so it is fully red-orange just as that stack expires. For stacks with a shared timer, the filled segments switch to it one after another at an even pace, so the whole filled area has turned just as the stacks expire. The near-expiry warning of a timed active effect switches to it in one step.
 
 ## Perfect Thrust
 

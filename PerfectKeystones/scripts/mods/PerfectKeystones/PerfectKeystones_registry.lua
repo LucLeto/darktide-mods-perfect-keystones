@@ -431,8 +431,8 @@ Registry.ENTRIES = {
     }
 }
 
---- Extra DMF settings, by entry id, shown right after the entry's checkbox; without `setting_id`,
--- `title` and `tooltip`, which `_extra_widget` adds.
+--- Extra DMF settings, by entry id, nested under the entry's checkbox; without `setting_id` and
+-- `tooltip`, which `_extra_widget` adds.
 local EXTRA_SETTINGS = {
     until_death = {
         { id = "until_death_show_cooldown", type = "checkbox", default_value = true }
@@ -500,8 +500,10 @@ end
 -- Settings menu
 -- ----------------------------------------------------------------------------
 
---- Appends one archetype's widgets: each renderable entry's enable checkbox, titled by its id,
--- followed by its extra settings. Entries without a ring get no widget.
+--- Appends one archetype's widgets: each renderable entry's enable checkbox, titled by its id.
+-- An entry's extra settings are the checkbox's own sub-widgets, so DMF shows them indented under
+-- the keystone they belong to, and hides them while that keystone is switched off. Entries without
+-- a ring get no widget.
 -- tab: sub_widgets DMF widget list to append to
 -- string: archetype archetype name
 Registry.append_widgets = function (sub_widgets, archetype)
@@ -511,20 +513,23 @@ Registry.append_widgets = function (sub_widgets, archetype)
         local entry = entries[i]
 
         if entry.archetype == archetype and Registry.is_renderable(entry) then
-            sub_widgets[#sub_widgets + 1] = {
+            local widget = {
                 setting_id = entry.id,
                 type = "checkbox",
                 default_value = true,
                 tooltip = entry.id .. "_tooltip"
             }
-
             local extras = EXTRA_SETTINGS[entry.id]
 
             if extras then
+                widget.sub_widgets = {}
+
                 for j = 1, #extras do
-                    sub_widgets[#sub_widgets + 1] = _extra_widget(extras[j])
+                    widget.sub_widgets[j] = _extra_widget(extras[j])
                 end
             end
+
+            sub_widgets[#sub_widgets + 1] = widget
         end
     end
 end
