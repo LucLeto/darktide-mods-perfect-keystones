@@ -60,7 +60,7 @@ Every value is read from the game while you play: stack counts, maximums and dur
 | Veteran | Marksman's Focus | Held stacks (10, or 15 with the upgrade); the next stack's share warns before it decays | With stacks |
 | Veteran | Focus Target! | Held tagging stacks (4, or 6 with the upgrade), in whole steps; the next stack's share fills in light blue over its 1.5 s build-up, regained stacks sweep in | Below the maximum, including 0 (or always) |
 | Veteran | Weapons Specialist | The active buff of the wielded weapon's remaining time; otherwise the resources stored for your next weapon switch; new resources sweep in | With a buff or resources (or only below a full pool) |
-| Zealot | Until Death | Outer ring: the protection's countdown after it saved you, then the cooldown in the cooldown colour | Until it is ready again |
+| Zealot | Until Death | Outer ring: the protection's countdown after it saved you (8 s), or after your combat ability with the Zealous Pilgrim modifier (4 s), then the cooldown in the cooldown colour | During a protection, and until it is ready again |
 | Zealot | Blazing Piety | Fury (25) before activation; while the personal buff runs, its remaining time | With Fury or the buff |
 | Zealot | Martyrdom | Stacks from missing health segments against the keystone's maximum of 5, so a full ring always means full strength; new stacks sweep in | With stacks (or only below the maximum) |
 | Zealot | Inexorable Judgement | Held Momentum (20); while active, its remaining time (6 s, or 10 s with the upgrade), however many stacks it was activated with | With Momentum or while active |
@@ -90,6 +90,7 @@ The numbers in brackets are the values of game version 1.13.2, for orientation; 
 * **Feel No Pain, Flensing Protocols and Focus Target!** stay out of the way at their maximum and appear as soon as you lose a stack. At zero the ring stays visible, empty. Regained stacks sweep in over 0.3 s, and when the maximum returns the full ring stays visible for a second before it hides. Their `Visibility` setting can show them at the maximum too.
 * **Refill of Feel No Pain and Focus Target!** Feel No Pain restores one stack 2 s after your last lost and your last restored stack, and keeps restarting that timer while you are knocked down; Focus Target! gains one stack 1.5 s after its last change, such as a gained stack or a tag that used your stacks. Your client is not sent these timers, so the mod rebuilds them from the losses and gains it sees, which arrive with the same delay as the new stack. The next stack's share fills in light blue over those 2 s, the remaining seconds label counts down to it, and the share turns purple when the stack actually arrives. Until the mod has seen a stack come or go, for example right after enabling it, no refill is shown.
 * **Until Death** is hidden while it is ready. With `Show cooldown` off, it hides as soon as the protection ends.
+* **Zealous Pilgrim**, the Until Death modifier, grants a shorter protection when you use your combat ability (with Shroudfield when its stealth ends, with Chorus when the channel ends). It is a separate buff that does not start Until Death's cooldown, so it shows as its own purple countdown, also while the cooldown runs, and the cooldown display continues afterwards. If both protections run at once, the ring shows the one with more time left.
 
 <details>
 <summary>Buff templates (for modders)</summary>
@@ -101,7 +102,7 @@ A keystone counts as selected while its controller or passive buff is present, s
 | Marksman's Focus | `veteran_snipers_focus` | `veteran_snipers_focus_stat_buff`, `_increased_stacks` | `max_stacks()` |
 | Focus Target! | `veteran_improved_tag` | same buff (`talent_resource.current_resource`) | `template_data().max_stacks` |
 | Weapons Specialist | `veteran_weapon_switch_passive_buff` | active: `veteran_weapon_switch_ranged_buff`, `_melee_buff`; pool: `veteran_weapon_switch_ranged_visual` (melee wielded), `_melee_visual` (ranged wielded) | `max_stacks()` |
-| Until Death | `zealot_resist_death` | same buff: `active_start_time()`, `_active_duration()`, `_cooldown_duration()` | - |
+| Until Death | `zealot_resist_death` | same buff: `active_start_time()`, `_active_duration()`, `_cooldown_duration()`; Zealous Pilgrim's protection: `zealot_resist_death_temp` | - |
 | Blazing Piety | `zealot_fanatic_rage` | active: `zealot_fanatic_rage_buff`; resource: same buff | `talent_resource.max_resource` |
 | Martyrdom | `zealot_martyrdom_base` | same buff | `template_data().max_stacks` |
 | Inexorable Judgement | `zealot_quickness_passive` | active: `zealot_quickness_active`, `_increased_duration`; resource: same buff | child template `max_stacks` |

@@ -662,7 +662,10 @@ end
 --- `proc_cooldown`: a proc's active protection as a countdown, then, with the entry's cooldown
 -- setting on, its cooldown as a countdown in the cooldown colour; hidden while ready.
 -- The phase follows the proc's actual active start time, which the game sets when it procs; the
--- cooldown starts where the active time ends, as `ProcBuff` places it.
+-- cooldown starts where the active time ends, as `ProcBuff` places it. The entry's `active` buffs
+-- are further timed protections, such as the shorter one Until Death's Zealous Pilgrim modifier
+-- grants on combat ability use without starting the proc's cooldown: while any protection runs,
+-- the one with the most time left is shown, ahead of the cooldown, which resumes afterwards.
 -- tab: tracked compiled tracking entry
 -- tab: state presentation state
 -- tab: ctx frame context
@@ -682,11 +685,28 @@ Kinds.proc_cooldown = function (tracked, state, ctx)
 
     local t = ctx.t
     local active_end_t = active_start_time + active_duration
+    local remaining, duration = _active_timer(ctx.found, tracked.active, t)
+
+    -- An expired protection lingers on a client until the server removes it; it no longer counts.
+    if remaining and remaining <= 0 then
+        remaining = nil
+    end
 
     if t < active_end_t then
-        local remaining = active_end_t - t
+        local proc_remaining = active_end_t - t
 
-        _show_timer(state, PHASE_ACTIVE, BASE_ACTIVE, remaining < active_duration and remaining or active_duration, active_duration)
+        if proc_remaining > active_duration then
+            proc_remaining = active_duration
+        end
+
+        if not remaining or proc_remaining >= remaining then
+            remaining = proc_remaining
+            duration = active_duration
+        end
+    end
+
+    if remaining then
+        _show_timer(state, PHASE_ACTIVE, BASE_ACTIVE, remaining, duration)
 
         return
     end

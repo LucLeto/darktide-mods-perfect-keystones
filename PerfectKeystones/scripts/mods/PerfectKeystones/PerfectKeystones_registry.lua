@@ -196,7 +196,8 @@ Registry.ENTRIES = {
     },
     -- Zealot -----------------------------------------------------------------
     {
-        -- The rescue proc's protection, then its cooldown; hidden while ready.
+        -- The rescue proc's protection, or the shorter one of the Zealous Pilgrim modifier, then the
+        -- proc's cooldown; hidden while ready.
         id = "until_death",
         archetype = "zealot",
         talent = "zealot_resist_death",
@@ -204,6 +205,7 @@ Registry.ENTRIES = {
         slot = SLOT_OUTER,
         detect = { "zealot_resist_death" },
         buffs = { "zealot_resist_death" },
+        active = { "zealot_resist_death_temp" },
         cooldown_setting = "until_death_show_cooldown",
         ring_setting = "until_death_ring"
     },
