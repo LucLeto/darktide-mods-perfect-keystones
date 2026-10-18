@@ -83,7 +83,8 @@ local Tracker = {}
 -- A compiled entry holds the registry fields the kinds read, its buff templates as watch indices
 -- (`detect`, `buffs`, `active`, `by_slot`), its presentation `state` and its transition and debug
 -- bookkeeping (`selected`, `last_visible`, `last_phase`, `last_stacks`, `last_remaining`), plus
--- `seen_buff`, `seen_t` and `valid_t` for the kinds.
+-- `seen_buff`, `seen_t`, `valid_t` and the refill bookkeeping (`observed_count`, `gain_t`,
+-- `loss_t`, `sweep_from`, `shown_held`, `full_t`) for the kinds.
 local ARCHETYPE_DATA = {}
 
 --- Largest watch index of any archetype; the size of the `found` table.
@@ -133,6 +134,8 @@ local function _compile_entry(data, entry)
         gate = entry.gate,
         gate_setting = entry.gate_setting,
         settle = entry.settle or 0,
+        animate_gains = entry.animate_gains or false,
+        restore_progress = entry.restore_progress or false,
         detect = _watch_indices(data, entry.detect),
         buffs = _watch_indices(data, entry.buffs),
         active = _watch_indices(data, entry.active),
@@ -145,7 +148,13 @@ local function _compile_entry(data, entry)
         last_remaining = nil,
         seen_buff = nil,
         seen_t = 0,
-        valid_t = nil
+        valid_t = nil,
+        observed_count = nil,
+        gain_t = nil,
+        loss_t = nil,
+        sweep_from = nil,
+        shown_held = nil,
+        full_t = nil
     }
 
     if entry.by_slot then
@@ -229,6 +238,7 @@ local ctx = {
     settings = nil,
     inventory_component = nil,
     talent_resource_component = nil,
+    character_state_component = nil,
     ability_extension = nil
 }
 
@@ -255,6 +265,12 @@ local function _reset_entries(data)
             compiled.seen_buff = nil
             compiled.seen_t = 0
             compiled.valid_t = nil
+            compiled.observed_count = nil
+            compiled.gain_t = nil
+            compiled.loss_t = nil
+            compiled.sweep_from = nil
+            compiled.shown_held = nil
+            compiled.full_t = nil
         end
     end
 end
@@ -273,6 +289,7 @@ local function _reset_state()
     state.dirty = true
     ctx.inventory_component = nil
     ctx.talent_resource_component = nil
+    ctx.character_state_component = nil
     ctx.ability_extension = nil
 
     for i = 1, max_watch_count do
@@ -282,8 +299,9 @@ end
 
 --- Binds to the HUD's player extensions of a new player unit.
 -- Nothing is tracked when there is no unit, the archetype has no keystone in the registry or the
--- buff extension cannot be read. The inventory and talent resource components are optional; the
--- keystones that need them hide without them.
+-- buff extension cannot be read. The inventory, talent resource and character state components are
+-- optional; the keystones that need them hide without them, and without the character state
+-- Feel No Pain shows no refill progress.
 -- ?tab: player_extensions the HUD's player extensions, with `unit_data`, `buff` and `ability`
 -- ?tab: player the HUD's player
 local function _bind(player_extensions, player)
@@ -309,6 +327,7 @@ local function _bind(player_extensions, player)
     if read_component then
         ctx.inventory_component = read_component(unit_data_extension, "inventory")
         ctx.talent_resource_component = read_component(unit_data_extension, "talent_resource")
+        ctx.character_state_component = read_component(unit_data_extension, "character_state")
     end
 
     ctx.ability_extension = player_extensions.ability

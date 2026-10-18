@@ -18,6 +18,7 @@ The rings sit around the crosshair, made of the same square segments as Perfect 
 | Stacks with one shared timer | Each held stack fills its share; as the shared timer runs down, the filled segments turn red-orange **one after another**, from the end of the filled area back toward 12 o'clock. When the last one has turned, the stacks are lost. A refresh turns them purple again; with more stacks, more segments are lit and they turn faster |
 | Stacks or resources without a timer | Each held stack fills its share, in whole steps |
 | Cooldown, next Blitz charge | Light blue ring that empties counter-clockwise |
+| Stack being restored (Feel No Pain) | The next stack's share fills in light blue over the restore interval and turns purple when the stack returns |
 | Nothing to show | Hidden |
 
 A ring pulses briefly when an effect activates, is refreshed, switches to its cooldown or reaches its maximum stacks. Optionally it can also pulse on every stack change, and show the stack count right of the rings and the remaining seconds left of them, each label movable with its own offsets. The inner ring's labels sit just below the rings' centre line, the outer ring's just above it.
@@ -63,7 +64,7 @@ Every value is read from the game while you play: stack counts, maximums and dur
 | Zealot | Inexorable Judgement | Held Momentum (20); while active, its remaining time (6 s, or 10 s with the upgrade), however many stacks it was activated with | With Momentum or while active |
 | Ogryn | Heavy Hitter | Held stacks (8); the filled segments turn red-orange one by one as the shared timer runs down | With stacks |
 | Ogryn | Burst Limiter Override | Held damage stacks from ranged kills (10); the filled segments turn red-orange one by one as the shared timer runs down | With stacks |
-| Ogryn | Feel No Pain | Strength stacks (10) in whole steps | Below the maximum, including 0 (or always) |
+| Ogryn | Feel No Pain | Strength stacks (10) in whole steps; the next stack's share fills in light blue over the 2 s restore interval, regained stacks sweep in | Below the maximum, including 0 (or always) |
 | Psyker | Warp Siphon | Held Warp Charges (4, or 6 with the upgrade); the next charge's share warns before it decays | With charges |
 | Psyker | Disrupt Destiny | Held stacks (15, or 25 with the upgrade; 5 s or 10 s per stack); the next stack's share warns | With stacks |
 | Psyker | Empowered Psionics | Stored empowered Blitz charges (1, or 3 with the upgrade) | With charges (optionally only with the Blitz in hand) |
@@ -77,13 +78,14 @@ Every value is read from the game while you play: stack counts, maximums and dur
 | Hive Scum | Chemical Dependency | Held stacks (3 at 90 s each, or 4 at 60 s with the upgrade); the next stack's share warns | With stacks |
 | Skitarius | Redline Capacitors | Held stacks (4, or 5 with the upgrade); the next stack's share warns before it decays | With stacks |
 | Skitarius | Power Overload | Your charge toward the next overload (30); while the Power Overload buff is on you, its remaining time, also when an ally triggered it | With charge or the buff |
-| Skitarius | Flensing Protocols | Strength stacks (6, or 8 with the upgrade) in whole steps | Below the maximum, including 0 (or always) |
+| Skitarius | Flensing Protocols | Strength stacks (6, or 8 with the upgrade) in whole steps; regained stacks sweep in | Below the maximum, including 0 (or always) |
 
 The numbers in brackets are the values of game version 1.13.2, for orientation; the mod reads them from the game.
 
 * **Hybrid keystones show one thing at a time.** While the active buff runs, its countdown takes the ring, and resources you rebuild meanwhile stay hidden, also from the stack label. When it ends, the ring switches straight to the resource you hold now.
 * **Weapons Specialist and Terminus Warrant** show the pool for your *next* switch: with your melee weapon out, the resources that the switch to ranged will use, and the other way round. With the Blitz or an item in hand, no pool is shown.
-* **Feel No Pain and Flensing Protocols** stay out of the way at full strength and appear as soon as you lose a stack. At zero the ring stays visible, empty. Their `Visibility` setting can show them at full strength too.
+* **Feel No Pain and Flensing Protocols** stay out of the way at full strength and appear as soon as you lose a stack. At zero the ring stays visible, empty. Regained stacks sweep in over 0.3 s, and when full strength returns the full ring stays visible for a second before it hides. Their `Visibility` setting can show them at full strength too.
+* **Feel No Pain's refill.** The game restores one stack 2 s after your last lost and your last restored stack, and keeps restarting that timer while you are knocked down. Your client is not sent this timer, so the mod rebuilds it from the losses and restores it sees, which arrive with the same delay as the restored stack. The next stack's share fills in light blue over those 2 s, the remaining seconds label counts down to it, and the share turns purple when the stack actually arrives. Until the mod has seen a stack come or go, for example right after enabling it, no refill is shown.
 * **Until Death** is hidden while it is ready. With `Show cooldown` off, it hides as soon as the protection ends.
 
 <details>
@@ -149,7 +151,7 @@ The renderer also supports a progressive style for stacks that expire one at a t
 | Active color | RGB `170, 90, 255`, alpha `235` (purple) | Lit segments: stacks, resources, active effects |
 | Unfilled segment color | RGB `70, 82, 86`, alpha `80` (faint grey) | Segments that are not lit |
 | Expiring color | RGB `255, 90, 70`, alpha `235` (red-orange) | What an expiring stack turns toward, and an active effect's last moments |
-| Cooldown color | RGB `110, 175, 235`, alpha `220` (light blue) | Until Death's cooldown and Lone Wolf's next Blitz charge |
+| Cooldown color | RGB `110, 175, 235`, alpha `220` (light blue) | Until Death's cooldown, Lone Wolf's next Blitz charge and Feel No Pain's stack being restored |
 | Near-expiry warning | 25 % | 0-100 % of an active effect's duration at whose end the ring turns the expiring colour; 0 turns it off. Cooldowns are not affected |
 
 One group per class, with a checkbox for each keystone that draws a ring, all on by default:

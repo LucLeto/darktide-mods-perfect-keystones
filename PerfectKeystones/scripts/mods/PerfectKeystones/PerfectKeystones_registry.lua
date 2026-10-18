@@ -25,6 +25,11 @@
 -- `gate` condition the gate setting adds, one of the `GATE_*` values;
 -- `settle` seconds a below-maximum deficit is held back after the stack buff first appears, as the
 -- starting stacks reach a client over the network;
+-- `animate_gains` for a below-maximum entry: newly gained stacks sweep in, and on reaching the
+-- maximum the full ring stays visible for a moment before it hides;
+-- `restore_progress` for a parent buff that restores child stacks on a timer: the share of the
+-- next stack fills in the cooldown colour over the restore interval, rebuilt from observed losses
+-- and gains, as the timer itself is not sent to clients;
 -- `decay_style` `DECAY_STABLE` (stable fill, next stack changes colour) or `DECAY_PROGRESSIVE`
 -- (next stack drains); every current stack-decay keystone has the confirmed stable style.
 --
@@ -233,6 +238,7 @@ Registry.ENTRIES = {
     },
     {
         -- Strength stacks (child stacks without the baseline); shown below the maximum by default.
+        -- One stack is restored per restore interval after the last loss and the last gain.
         id = "feel_no_pain",
         archetype = "ogryn",
         talent = "ogryn_carapace_armor",
@@ -242,7 +248,9 @@ Registry.ENTRIES = {
         buffs = { "ogryn_carapace_armor_parent" },
         cap = CAP_CHILD_TEMPLATE,
         visibility_setting = "feel_no_pain_visibility",
-        settle = 0.5
+        settle = 0.5,
+        animate_gains = true,
+        restore_progress = true
     },
     -- Psyker -----------------------------------------------------------------
     {
@@ -427,7 +435,8 @@ Registry.ENTRIES = {
         buffs = { "cryptic_dissector_stack" },
         cap = CAP_MAX_STACKS_CAP,
         visibility_setting = "flensing_protocols_visibility",
-        settle = 0.5
+        settle = 0.5,
+        animate_gains = true
     }
 }
 

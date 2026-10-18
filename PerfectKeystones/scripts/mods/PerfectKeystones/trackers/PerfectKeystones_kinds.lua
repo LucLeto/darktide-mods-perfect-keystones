@@ -14,8 +14,10 @@
 -- `countdown` whether the fill is a timed active effect's remaining time, which the near-expiry
 -- threshold applies to;
 -- `highlight` `HIGHLIGHT_NONE`, `HIGHLIGHT_NEXT` (only the next expiring stack's share changes
--- colour) or `HIGHLIGHT_SHARED` (the lit segments turn to the expiring colour one after another,
--- so the whole filled area has turned as the shared timer ends);
+-- colour), `HIGHLIGHT_SHARED` (the lit segments turn to the expiring colour one after another,
+-- so the whole filled area has turned as the shared timer ends) or `HIGHLIGHT_REFILL` (the lit
+-- segments from `highlight_from` on are a stack still being restored or sweeping in, drawn in the
+-- cooldown colour);
 -- `highlight_from` fill fraction from which the highlight starts;
 -- `expiry` elapsed fraction from 0 to 1 of the timer behind the highlight, nil without valid timing;
 -- `stacks`, `max_stacks` held count and effective maximum, nil in timed phases, so a label can never
@@ -29,11 +31,13 @@
 -- module: PerfectKeystones_kinds
 -- author: LucLeto
 local mod = get_mod("PerfectKeystones")
+local PlayerUnitStatus = require("scripts/utilities/attack/player_unit_status")
 local Sources = mod:io_dofile("PerfectKeystones/scripts/mods/PerfectKeystones/trackers/PerfectKeystones_sources")
 local Registry = mod._registry
 
 local count_of = Sources.count
 local cap_of = Sources.cap
+local is_positive = Sources.is_positive
 local timer_of = Sources.timer
 
 --- Wielded slot of the Blitz, for Empowered Psionics' gate.
@@ -43,6 +47,13 @@ local SLOT_GRENADE_ABILITY = "slot_grenade_ability"
 -- shown empty, before the ring hides. The game clears the timer on the fixed frame that restores
 -- a charge and sets the next interval on the following one.
 local REPLENISH_GAP_HOLD = 0.1
+
+--- Seconds newly gained stacks of an `animate_gains` entry take to sweep in.
+local GAIN_SWEEP_DURATION = 0.3
+
+--- Seconds the full ring of an `animate_gains` entry stays visible after its last stack returned,
+-- before the below-maximum visibility hides it.
+local FULL_HOLD_DURATION = 1
 
 local GATE_BLITZ_WIELDED = Registry.GATE_BLITZ_WIELDED
 local VISIBILITY_ALWAYS = Registry.VISIBILITY_ALWAYS
@@ -62,6 +73,7 @@ local BASE_COOLDOWN = "cooldown"
 local HIGHLIGHT_NONE = "none"
 local HIGHLIGHT_NEXT = "next"
 local HIGHLIGHT_SHARED = "shared"
+local HIGHLIGHT_REFILL = "refill"
 
 Kinds.PHASE_ACTIVE = PHASE_ACTIVE
 Kinds.PHASE_BUILDING = PHASE_BUILDING
@@ -73,6 +85,7 @@ Kinds.BASE_COOLDOWN = BASE_COOLDOWN
 Kinds.HIGHLIGHT_NONE = HIGHLIGHT_NONE
 Kinds.HIGHLIGHT_NEXT = HIGHLIGHT_NEXT
 Kinds.HIGHLIGHT_SHARED = HIGHLIGHT_SHARED
+Kinds.HIGHLIGHT_REFILL = HIGHLIGHT_REFILL
 
 -- ----------------------------------------------------------------------------
 -- State
@@ -232,6 +245,163 @@ local function _count_and_cap(tracked, buff, ctx)
     return count, cap
 end
 
+--- Forgets an `animate_gains` entry's observed count history, as for a new stack buff instance.
+-- tab: tracked compiled tracking entry
+local function _forget_refill(tracked)
+    tracked.observed_count = nil
+    tracked.gain_t = nil
+    tracked.loss_t = nil
+    tracked.sweep_from = nil
+    tracked.shown_held = nil
+    tracked.full_t = nil
+end
+
+--- Notes an `animate_gains` entry's observed count changes: a gain starts a sweep from the stacks
+-- shown so far, and reaching the maximum from below starts the full hold; a loss ends both. Called
+-- every frame the count can be read, shown or not; the first count after an instance change is
+-- only recorded.
+-- tab: tracked compiled tracking entry
+-- int: count held stacks
+-- int: cap effective maximum
+-- number: t latest fixed-step time
+local function _observe_count(tracked, count, cap, t)
+    local observed = tracked.observed_count
+
+    if observed and count ~= observed then
+        if count > observed then
+            local from = tracked.shown_held
+
+            if not from or from > observed then
+                from = observed
+            end
+
+            tracked.gain_t = t
+            tracked.sweep_from = from
+
+            if count >= cap and observed < cap then
+                tracked.full_t = t
+            end
+        else
+            tracked.loss_t = t
+            tracked.sweep_from = nil
+            tracked.shown_held = nil
+            tracked.full_t = nil
+        end
+    end
+
+    tracked.observed_count = count
+end
+
+--- Returns the restore progress of a parent buff's next child stack.
+-- The game restores one child stack once the parent's `restore_child_duration` has passed since
+-- its last removed and its last added stack, and keeps restarting that timer while the player is
+-- knocked down. The timer is not sent to clients, so it is rebuilt here from the losses and gains
+-- this client observed, which arrive with the same delay as the restored stack itself. Until a
+-- change has been observed, or without the character state, the timer is unknown and no progress
+-- is reported.
+-- tab: tracked compiled tracking entry
+-- tab: buff parent buff instance
+-- tab: ctx frame context
+-- treturn: number progress from 0 to 1 toward the next restored stack
+-- treturn: ?number seconds until that stack, nil without progress
+-- treturn: ?number restore interval in seconds, nil without progress
+local function _restore_progress(tracked, buff, ctx)
+    local template = buff.template and buff:template()
+    local interval = template and template.restore_child_duration
+    local character_state_component = ctx.character_state_component
+
+    if not is_positive(interval) or not character_state_component then
+        return 0, nil, nil
+    end
+
+    local t = ctx.t
+
+    if PlayerUnitStatus.is_knocked_down(character_state_component) then
+        tracked.loss_t = t
+
+        return 0, nil, nil
+    end
+
+    local since = tracked.loss_t
+    local gain_t = tracked.gain_t
+
+    if gain_t and (not since or gain_t > since) then
+        since = gain_t
+    end
+
+    if not since then
+        return 0, nil, nil
+    end
+
+    local elapsed = t - since
+
+    if elapsed <= 0 then
+        return 0, nil, nil
+    end
+
+    if elapsed >= interval then
+        return 1, 0, interval
+    end
+
+    return elapsed / interval, interval - elapsed, interval
+end
+
+--- Applies an `animate_gains` entry's refill presentation to its shown stacks: newly gained stacks
+-- sweep in over `GAIN_SWEEP_DURATION`. With `restore_progress`, the share of the next stack also
+-- fills during its restore interval; that share, and a gained share the sweep has not reached
+-- yet, are drawn with `HIGHLIGHT_REFILL`, and the time label counts down to the next stack.
+-- Without it, the gained segments themselves appear one after another.
+-- tab: tracked compiled tracking entry
+-- tab: state presentation state, already showing `count` of `cap`
+-- tab: ctx frame context
+-- tab: buff stack buff instance
+-- int: count held stacks
+-- int: cap effective maximum
+local function _show_refill(tracked, state, ctx, buff, count, cap)
+    local held = count
+    local sweep_from = tracked.sweep_from
+
+    if sweep_from then
+        local progress = (ctx.t - tracked.gain_t) / GAIN_SWEEP_DURATION
+
+        if progress < 1 then
+            held = sweep_from + (count - sweep_from) * progress
+        else
+            tracked.sweep_from = nil
+        end
+    end
+
+    tracked.shown_held = held
+
+    local held_fill = held / cap
+
+    if not tracked.restore_progress then
+        state.fill = held_fill
+
+        return
+    end
+
+    local refill, remaining, interval = 0, nil, nil
+
+    if count < cap then
+        refill, remaining, interval = _restore_progress(tracked, buff, ctx)
+    end
+
+    local fill = (count + refill) / cap
+
+    state.fill = fill
+
+    if fill > held_fill then
+        state.highlight = HIGHLIGHT_REFILL
+        state.highlight_from = held_fill
+    end
+
+    if remaining then
+        state.remaining = remaining
+        state.duration = interval
+    end
+end
+
 --- Shows held stacks whose next or shared expiry is announced by colour.
 -- With `HIGHLIGHT_NEXT`, a progressive decay style drains the next stack's share instead.
 -- tab: tracked compiled tracking entry
@@ -317,17 +487,23 @@ end
 --- `stack_discrete`: held stacks in whole steps, without a timer.
 -- Shown while above zero, or, for an entry with a visibility setting, below its maximum (zero
 -- included) or always; a deficit is held back for the entry's settle time after its stack buff
--- appears. An entry with a gate setting additionally needs its gate condition when that setting is
--- on. A missing buff or maximum is not a zero count and hides the ring.
+-- appears. An `animate_gains` entry sweeps gained stacks in and, below the maximum, keeps its full
+-- ring for `FULL_HOLD_DURATION` after the last stack returned; with `restore_progress` it also
+-- fills the next stack's share over its restore interval (see `_show_refill`). An entry with a gate
+-- setting additionally needs its gate condition when that setting is on. A missing buff or maximum
+-- is not a zero count and hides the ring.
 -- tab: tracked compiled tracking entry
 -- tab: state presentation state
 -- tab: ctx frame context
 Kinds.stack_discrete = function (tracked, state, ctx)
     local buff = _first(ctx.found, tracked.buffs)
+    local t = ctx.t
 
     if buff ~= tracked.seen_buff then
         tracked.seen_buff = buff
-        tracked.seen_t = ctx.t
+        tracked.seen_t = t
+
+        _forget_refill(tracked)
     end
 
     local count, cap
@@ -342,6 +518,12 @@ Kinds.stack_discrete = function (tracked, state, ctx)
         return
     end
 
+    local animate_gains = tracked.animate_gains
+
+    if animate_gains then
+        _observe_count(tracked, count, cap, t)
+    end
+
     local settings = ctx.settings
     local visible
     local visibility_setting = tracked.visibility_setting
@@ -349,8 +531,13 @@ Kinds.stack_discrete = function (tracked, state, ctx)
     if visibility_setting then
         if settings[visibility_setting] == VISIBILITY_ALWAYS then
             visible = true
+        elseif count < cap then
+            visible = t - tracked.seen_t >= tracked.settle
         else
-            visible = count < cap and ctx.t - tracked.seen_t >= tracked.settle
+            -- Starting stacks arriving during the settle time get no full hold either.
+            local full_t = tracked.full_t
+
+            visible = full_t ~= nil and t - full_t < FULL_HOLD_DURATION and full_t - tracked.seen_t >= tracked.settle
         end
     else
         visible = count > 0
@@ -362,10 +549,16 @@ Kinds.stack_discrete = function (tracked, state, ctx)
         visible = inventory_component ~= nil and inventory_component.wielded_slot == SLOT_GRENADE_ABILITY
     end
 
-    if visible then
-        _show_stacks(state, PHASE_HELD, count, cap)
-    else
+    if not visible then
         _hide(state)
+
+        return
+    end
+
+    _show_stacks(state, PHASE_HELD, count, cap)
+
+    if animate_gains then
+        _show_refill(tracked, state, ctx, buff, count, cap)
     end
 end
 

@@ -8,12 +8,13 @@
 -- counter-clockwise back toward 12 o'clock. Lit segments use the active colour, or the cooldown
 -- colour for a cooldown or recharge; the share of the next expiring stack blends toward the
 -- expiring colour as its timer runs down, stacks with a shared timer turn to the expiring colour
--- segment by segment until the whole filled area has turned as they expire, and a timed active
--- effect turns the expiring colour for the last part of its duration set by the near-expiry
--- threshold. Unlit segments use the unfilled colour. Each ring pulses briefly when the
--- tracker reports a transition, and can show its stack count right of the rings and its remaining
--- seconds left of them, each label moved by its own offset settings. Both rings keep their geometry
--- when the other one hides, and follow the crosshair together.
+-- segment by segment until the whole filled area has turned as they expire, a stack still being
+-- restored or sweeping in is drawn in the cooldown colour, and a timed active effect turns the
+-- expiring colour for the last part of its duration set by the near-expiry threshold. Unlit
+-- segments use the unfilled colour. Each ring pulses briefly when the tracker reports a
+-- transition, and can show its stack count right of the rings and its remaining seconds left of
+-- them, each label moved by its own offset settings. Both rings keep their geometry when the other
+-- one hides, and follow the crosshair together.
 --
 -- Colours, geometry and labels are only rewritten when the lit count, the highlight, the colour
 -- step, the pulse, the shown value or the settings change; nothing is allocated per frame except a
@@ -51,6 +52,7 @@ local type = type
 local BASE_COOLDOWN = "cooldown"
 local HIGHLIGHT_NONE = "none"
 local HIGHLIGHT_SHARED = "shared"
+local HIGHLIGHT_REFILL = "refill"
 
 --- Number of segments in each ring, the first one at the top and the rest clockwise.
 -- Fixed so the widget passes can be built once; the angle of segment `i` is
@@ -71,6 +73,9 @@ local CROSSHAIR_SNAP_DT = 1
 
 --- Steps of the blend from the active to the expiring colour; the colours are rewritten once per step.
 local COLOR_STEPS = 32
+
+--- Render cache step of a refill highlight, apart from every blend step.
+local REFILL_STEP = -1
 
 --- Label box size, font size and distance from the outer ring's outer edge, at 1080p.
 local LABEL_WIDTH = 80
@@ -535,21 +540,27 @@ end
 -- the state's elapsed timer fraction, in `COLOR_STEPS` steps; with a shared timer, the lit segments
 -- turn to the expiring colour one after another, from the end of the filled area back toward 12
 -- o'clock, so the share of turned segments is the elapsed fraction and the last one turns as the
--- stacks expire. More stacks light more segments, which then turn faster.
+-- stacks expire. More stacks light more segments, which then turn faster. A refill highlight draws
+-- the lit segments from its start, a stack still being restored or sweeping in, in the cooldown
+-- colour.
 -- tab: slot per-ring display state
 -- tab: ring_state presentation state
 HudElementPerfectKeystones._refresh_ring = function (self, slot, ring_state)
     local lit = _lit_count(ring_state.fill)
     local base = ring_state.base
+    local highlight = ring_state.highlight
     local highlight_start = lit + 1
     local step = 0
     local near = false
     local expiry = ring_state.expiry
 
-    if ring_state.highlight ~= HIGHLIGHT_NONE and expiry and lit > 0 then
+    if highlight == HIGHLIGHT_REFILL and lit > 0 then
+        highlight_start = _lit_count(ring_state.highlight_from) + 1
+        step = REFILL_STEP
+    elseif highlight ~= HIGHLIGHT_NONE and expiry and lit > 0 then
         local elapsed = math_clamp(expiry, 0, 1)
 
-        if ring_state.highlight == HIGHLIGHT_SHARED then
+        if highlight == HIGHLIGHT_SHARED then
             highlight_start = lit + 1 - math_floor(elapsed * lit)
             step = COLOR_STEPS
         else
@@ -584,17 +595,21 @@ HudElementPerfectKeystones._refresh_ring = function (self, slot, ring_state)
         base_color = self._active_color
     end
 
-    local blend_color = slot.blend_color
+    local highlight_color = slot.blend_color
 
     if highlight_start <= lit then
-        local active_color = self._active_color
-        local expiring_color = self._expiring_color
-        local blend = step / COLOR_STEPS
+        if step == REFILL_STEP then
+            highlight_color = self._cooldown_color
+        else
+            local active_color = self._active_color
+            local expiring_color = self._expiring_color
+            local blend = step / COLOR_STEPS
 
-        for channel = 1, 4 do
-            local from = active_color[channel]
+            for channel = 1, 4 do
+                local from = active_color[channel]
 
-            blend_color[channel] = math_floor(from + (expiring_color[channel] - from) * blend + 0.5)
+                highlight_color[channel] = math_floor(from + (expiring_color[channel] - from) * blend + 0.5)
+            end
         end
     end
 
@@ -608,7 +623,7 @@ HudElementPerfectKeystones._refresh_ring = function (self, slot, ring_state)
         if i > lit then
             source = unfilled_color
         elseif i >= highlight_start then
-            source = blend_color
+            source = highlight_color
         else
             source = base_color
         end
