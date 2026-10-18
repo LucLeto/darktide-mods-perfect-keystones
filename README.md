@@ -214,4 +214,14 @@ A line is written when a keystone becomes selected or unselected and whenever it
 
 ## Credits & Sources
 
-Keystone names and values follow the game's talent definitions and the excellent guides by [kuli](https://steamcommunity.com/id/kulii/myworkshopfiles/?section=guides&appid=1361210). Game mechanics were checked against [Aussiemon's Darktide source code](https://github.com/Aussiemon/Darktide-Source-Code) for version 1.13.2. The ring rendering comes from [Perfect Thrust](https://github.com/LucLeto/darktide-mods-perfect-thrust).
+Keystone names and values follow the game's talent definitions and the excellent guides by [kuli](https://steamcommunity.com/id/kulii):
+
+* [\[1.13.x\] Veteran Talents & Mechanics](https://steamcommunity.com/sharedfiles/filedetails/?id=3094038976)
+* [\[1.13.x\] Zealot Talents & Mechanics](https://steamcommunity.com/sharedfiles/filedetails/?id=3088553235)
+* [\[1.13.x\] Ogryn Talents & Mechanics](https://steamcommunity.com/sharedfiles/filedetails/?id=3094034467)
+* [\[1.13.x\] Psyker Talents & Mechanics](https://steamcommunity.com/sharedfiles/filedetails/?id=3094028505)
+* [\[1.13.x\] Arbitrator Talents & Mechanics](https://steamcommunity.com/sharedfiles/filedetails/?id=3472722314)
+* [\[1.13.x\] Hive Scum Talents & Mechanics](https://steamcommunity.com/sharedfiles/filedetails/?id=3586590987)
+* [\[1.13.x\] Skitarius Talents & Mechanics](https://steamcommunity.com/sharedfiles/filedetails/?id=3674757853)
+
+Game mechanics were checked against [Aussiemon's Darktide source code](https://github.com/Aussiemon/Darktide-Source-Code) for version 1.13.2. The ring rendering comes from [Perfect Thrust](https://github.com/LucLeto/darktide-mods-perfect-thrust).
