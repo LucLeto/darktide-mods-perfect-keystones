@@ -20,7 +20,7 @@ The rings sit around the crosshair, made of the same square segments as Perfect 
 | Cooldown, next Blitz charge | Light blue ring that empties counter-clockwise |
 | Nothing to show | Hidden |
 
-A ring pulses briefly when an effect activates, is refreshed, switches to its cooldown or reaches its maximum stacks. Optionally it can also pulse on every stack change, and show the stack count and remaining seconds next to the rings.
+A ring pulses briefly when an effect activates, is refreshed, switches to its cooldown or reaches its maximum stacks. Optionally it can also pulse on every stack change, and show the stack count right of the rings and the remaining seconds left of them, each label movable with its own offsets. The inner ring's labels sit just below the rings' centre line, the outer ring's just above it.
 
 ### Two rings
 
@@ -89,7 +89,7 @@ The numbers in brackets are the values of game version 1.13.2, for orientation; 
 <details>
 <summary>Buff templates (for modders)</summary>
 
-A keystone counts as selected while its controller or passive buff is present, so talents disabled by a game mode and talent changes are followed as the game applies them. Counts come from `visual_stack_count()`, which already handles talent resources, parent buffs, stack offsets and custom counts. Timers are `start_time() + duration()` against `FixedFrame.get_latest_fixed_time()`, the clock the buffs use; `duration()` includes extra duration a talent added to the instance.
+A keystone counts as selected while its controller or passive buff is present, so talents disabled by a game mode and talent changes are followed as the game applies them. Your buffs are scanned once when you join a mission or respawn; after that the game's `event_player_buff_added` and `event_player_buff_removed` events, which the game's own buff bar listens to as well, keep the watched buffs current, so nothing is scanned per frame and no game function is hooked. Counts come from `visual_stack_count()`, which already handles talent resources, parent buffs, stack offsets and custom counts. Timers are `start_time() + duration()` against `FixedFrame.get_latest_fixed_time()`, the clock the buffs use; `duration()` includes extra duration a talent added to the instance.
 
 | Keystone | Selected by | Read | Maximum |
 | --- | --- | --- | --- |
@@ -137,8 +137,10 @@ The renderer also supports a progressive style for stacks that expire one at a t
 | Vertical offset | 0 | -540 to 540 px from the screen centre, or from the crosshair with `Follow crosshair` on |
 | Pulse | On | Briefly enlarges a ring's segments on activation, refresh, the switch to the cooldown and reaching the maximum stacks |
 | Pulse on every stack change | Off | With `Pulse` on, also pulses whenever a stack is gained or lost |
-| Show stack count | Off | Number of held stacks next to the rings |
-| Show remaining seconds | Off | Seconds of the ring's timer next to the rings, with tenths below 10 s |
+| Show stack count | Off | Number of held stacks, right of the rings |
+| &nbsp;&nbsp;Horizontal offset, Vertical offset | 0, 0 | -200 to 200 px at 1080p from the stack count's default place; nested under `Show stack count` |
+| Show remaining seconds | Off | Seconds of the ring's timer, left of the rings, with tenths below 10 s |
+| &nbsp;&nbsp;Horizontal offset, Vertical offset | 0, 0 | -200 to 200 px at 1080p from the remaining seconds' default place; nested under `Show remaining seconds` |
 
 `Appearance` group:
 

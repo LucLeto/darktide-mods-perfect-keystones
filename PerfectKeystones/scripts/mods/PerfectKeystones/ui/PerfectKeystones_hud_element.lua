@@ -11,8 +11,9 @@
 -- segment by segment until the whole filled area has turned as they expire, and a timed active
 -- effect turns the expiring colour for the last part of its duration set by the near-expiry
 -- threshold. Unlit segments use the unfilled colour. Each ring pulses briefly when the
--- tracker reports a transition, and can show its stack count and remaining seconds next to the
--- rings. Both rings keep their geometry when the other one hides, and follow the crosshair together.
+-- tracker reports a transition, and can show its stack count right of the rings and its remaining
+-- seconds left of them, each label moved by its own offset settings. Both rings keep their geometry
+-- when the other one hides, and follow the crosshair together.
 --
 -- Colours, geometry and labels are only rewritten when the lit count, the highlight, the colour
 -- step, the pulse, the shown value or the settings change; nothing is allocated per frame except a
@@ -21,7 +22,8 @@
 -- Loaded by DMF from the `register_hud_element` call in `PerfectKeystones.lua` and returned as the
 -- `HudElementPerfectKeystones` class, with the crosshair's visibility groups and without the HUD
 -- scale. Reads its settings from `mod._settings`, their defaults from `mod._ring_settings` and the
--- ring states from `mod._tracker`.
+-- ring states from `mod._tracker`, and forwards the game's buff added and removed events to the
+-- tracker while it exists.
 -- classmod: HudElementPerfectKeystones
 -- author: LucLeto
 local mod = get_mod("PerfectKeystones")
@@ -76,8 +78,17 @@ local LABEL_HEIGHT = 20
 local LABEL_FONT_SIZE = 16
 local LABEL_MARGIN = 6
 
---- Remaining seconds below which a label shows tenths.
+--- Value and style ids of the stack count and the remaining seconds label.
+local STACK_LABEL_ID = "stack_label"
+local TIME_LABEL_ID = "time_label"
+
+--- Remaining seconds below which the time label shows tenths.
 local LABEL_TENTHS_BELOW = 10
+
+--- The game's events for a buff instance added to or removed from a player unit, fired by
+-- `PlayerUnitBuffExtension`; also the names of the element's methods that forward them.
+local BUFF_ADDED_EVENT = "event_player_buff_added"
+local BUFF_REMOVED_EVENT = "event_player_buff_removed"
 
 --- Default colours `{ a, r, g, b }`, the colour settings' defaults; used when a colour setting is
 -- invalid, never written.
@@ -183,8 +194,39 @@ local function _number_setting(settings, id)
     return value
 end
 
---- Builds the widget definition of one ring: a `rect` pass per segment and a text pass for its
--- label. Segment offsets are relative to the ring node, so the ring centre is the node position.
+--- Returns the text pass of one label.
+-- The inner ring's labels sit just below the horizontal axis, the outer ring's just above it; the
+-- stack count is left-aligned right of the rings, the remaining seconds right-aligned left of them.
+-- `_apply_display_settings` sets the offsets.
+-- int: slot `SLOT_INNER` or `SLOT_OUTER`
+-- string: id value and style id of the label
+-- string: text_alignment `left` for the stack count, `right` for the remaining seconds
+-- treturn: tab text pass definition
+local function _label_pass(slot, id, text_alignment)
+    local label_style = table_clone(UIFontSettings.body_small)
+
+    label_style.font_size = LABEL_FONT_SIZE
+    label_style.drop_shadow = true
+    label_style.horizontal_alignment = "left"
+    label_style.vertical_alignment = "top"
+    label_style.text_horizontal_alignment = text_alignment
+    label_style.text_vertical_alignment = slot == SLOT_INNER and "top" or "bottom"
+    label_style.offset = { 0, 0, 2 }
+    label_style.size = { LABEL_WIDTH, LABEL_HEIGHT }
+    label_style.text_color = { ACTIVE_COLOR[1], ACTIVE_COLOR[2], ACTIVE_COLOR[3], ACTIVE_COLOR[4] }
+
+    return {
+        pass_type = "text",
+        value_id = id,
+        style_id = id,
+        value = "",
+        style = label_style
+    }
+end
+
+--- Builds the widget definition of one ring: a `rect` pass per segment and a text pass for each of
+-- its two labels. Segment offsets are relative to the ring node, so the ring centre is the node
+-- position.
 -- int: slot `SLOT_INNER` or `SLOT_OUTER`
 -- treturn: tab widget definition
 local function _ring_definition(slot)
@@ -202,26 +244,8 @@ local function _ring_definition(slot)
         }
     end
 
-    local label_style = table_clone(UIFontSettings.body_small)
-
-    label_style.font_size = LABEL_FONT_SIZE
-    label_style.drop_shadow = true
-    label_style.horizontal_alignment = "left"
-    label_style.vertical_alignment = "top"
-    label_style.text_horizontal_alignment = "left"
-    -- The inner ring's label sits just below the horizontal axis, the outer ring's just above it.
-    label_style.text_vertical_alignment = slot == SLOT_INNER and "top" or "bottom"
-    label_style.offset = { 0, 0, 2 }
-    label_style.size = { LABEL_WIDTH, LABEL_HEIGHT }
-    label_style.text_color = { ACTIVE_COLOR[1], ACTIVE_COLOR[2], ACTIVE_COLOR[3], ACTIVE_COLOR[4] }
-
-    passes[SEGMENT_COUNT + 1] = {
-        pass_type = "text",
-        value_id = "label",
-        style_id = "label",
-        value = "",
-        style = label_style
-    }
+    passes[SEGMENT_COUNT + 1] = _label_pass(slot, STACK_LABEL_ID, "left")
+    passes[SEGMENT_COUNT + 2] = _label_pass(slot, TIME_LABEL_ID, "right")
 
     return UIWidget.create_definition(passes, "perfect_keystones_ring")
 end
@@ -267,7 +291,8 @@ local HudElementPerfectKeystones = class("HudElementPerfectKeystones", "HudEleme
 -- HudElementPerfectKeystones
 -- ----------------------------------------------------------------------------
 
---- Initialises the element, both rings hidden, and applies the current settings.
+--- Initialises the element, both rings hidden, applies the current settings and registers for the
+-- game's buff events, which keep the tracker's buff instances current without scanning.
 -- tab: parent HUD that owns the element
 -- int: draw_layer element draw layer
 -- number: start_scale initial UI scale
@@ -312,9 +337,54 @@ HudElementPerfectKeystones.init = function (self, parent, draw_layer, start_scal
     end
 
     self:_apply_display_settings(mod._settings)
+
+    local event_manager = Managers.event
+
+    if event_manager then
+        event_manager:register(self, BUFF_ADDED_EVENT, BUFF_ADDED_EVENT, BUFF_REMOVED_EVENT, BUFF_REMOVED_EVENT)
+
+        self._registered_events = true
+
+        Tracker.set_event_driven(true)
+    end
 end
 
---- Forgets a ring's last drawn colours and label, so the next refresh rewrites them.
+--- Unregisters the buff events, so the tracker scans again should another element still poll it,
+-- then destroys the element.
+-- tab: ui_renderer active UI renderer
+HudElementPerfectKeystones.destroy = function (self, ui_renderer)
+    if self._registered_events then
+        local event_manager = Managers.event
+
+        if event_manager then
+            event_manager:unregister(self, BUFF_ADDED_EVENT)
+            event_manager:unregister(self, BUFF_REMOVED_EVENT)
+        end
+
+        self._registered_events = false
+
+        Tracker.set_event_driven(false)
+    end
+
+    HudElementPerfectKeystones.super.destroy(self, ui_renderer)
+end
+
+--- Forwards the game's event for a new buff instance of any player unit to the tracker.
+-- param: player player whose unit got the buff
+-- tab: buff_instance the new buff instance
+HudElementPerfectKeystones[BUFF_ADDED_EVENT] = function (self, player, buff_instance)
+    Tracker.on_buff_added(buff_instance)
+end
+
+--- Forwards the game's event for a buff instance of any player unit that is about to be removed to
+-- the tracker.
+-- param: player player whose unit loses the buff
+-- tab: buff_instance the removed buff instance
+HudElementPerfectKeystones[BUFF_REMOVED_EVENT] = function (self, player, buff_instance)
+    Tracker.on_buff_removed(buff_instance)
+end
+
+--- Forgets a ring's last drawn colours and labels, so the next refresh rewrites them.
 -- tab: slot per-ring display state
 local function _clear_render_cache(slot)
     slot.last_lit = nil
@@ -380,7 +450,7 @@ HudElementPerfectKeystones._update_slot = function (self, slot, ring_state, sett
     end
 
     self:_refresh_ring(slot, ring_state)
-    self:_refresh_label(slot, ring_state, settings)
+    self:_refresh_labels(slot, ring_state, settings)
 
     if slot.pulse_remaining > 0 then
         local remaining = slot.pulse_remaining - dt
@@ -549,15 +619,15 @@ HudElementPerfectKeystones._refresh_ring = function (self, slot, ring_state)
     widget.dirty = true
 end
 
---- Writes a ring's label, when its shown value changed since the last call.
--- With `show_stack_label` on, it shows the held stacks of a state that has them; with
--- `show_time_label` on, the seconds of the timer shown or behind the highlight, with tenths below
--- `LABEL_TENTHS_BELOW` seconds. Timed phases carry no stack count, so a resource the ring hides is
--- never shown either. The label takes the ring's base colour.
+--- Writes a ring's two labels, when a shown value changed since the last call.
+-- With `show_stack_label` on, the stack label shows the held stacks of a state that has them; with
+-- `show_time_label` on, the time label shows the seconds of the timer shown or behind the
+-- highlight, with tenths below `LABEL_TENTHS_BELOW` seconds. Timed phases carry no stack count, so
+-- a resource the ring hides is never shown either. Both labels take the ring's base colour.
 -- tab: slot per-ring display state
 -- tab: ring_state presentation state
 -- tab: settings `mod._settings`
-HudElementPerfectKeystones._refresh_label = function (self, slot, ring_state, settings)
+HudElementPerfectKeystones._refresh_labels = function (self, slot, ring_state, settings)
     local stacks = settings.show_stack_label and ring_state.stacks or nil
     local remaining = settings.show_time_label and ring_state.remaining or nil
     local key
@@ -581,27 +651,22 @@ HudElementPerfectKeystones._refresh_label = function (self, slot, ring_state, se
     slot.last_label_key = key
     slot.last_label_base = base
 
-    local seconds_text
+    local seconds_text = ""
 
     if key then
         seconds_text = key >= 0 and string_format("%.1f", key / 10) or string_format("%d", -1 - key)
     end
 
-    local text
-
-    if stacks and seconds_text then
-        text = string_format("%d  %s", stacks, seconds_text)
-    elseif stacks then
-        text = string_format("%d", stacks)
-    else
-        text = seconds_text or ""
-    end
-
     local widget = slot.widget
+    local content = widget.content
+    local style = widget.style
+    local color = base == BASE_COOLDOWN and self._cooldown_color or self._active_color
 
-    widget.content.label = text
+    content[STACK_LABEL_ID] = stacks and string_format("%d", stacks) or ""
+    content[TIME_LABEL_ID] = seconds_text
 
-    _set_color(widget.style.label.text_color, base == BASE_COOLDOWN and self._cooldown_color or self._active_color)
+    _set_color(style[STACK_LABEL_ID].text_color, color)
+    _set_color(style[TIME_LABEL_ID].text_color, color)
 
     widget.dirty = true
 end
@@ -647,15 +712,18 @@ HudElementPerfectKeystones._hide_slot = function (self, slot)
     local widget = slot.widget
 
     widget.content.visible = false
-    widget.content.label = ""
+    widget.content[STACK_LABEL_ID] = ""
+    widget.content[TIME_LABEL_ID] = ""
     widget.dirty = true
 end
 
---- Applies the position, geometry, colour and threshold settings.
+--- Applies the position, geometry, label, colour and threshold settings.
 -- The inner ring takes the ring radius and thickness; the outer ring lies the outer ring gap
--- outside it, measured between the segments' edges, with its own thickness. Both labels sit the
--- same distance right of the outer ring's outer edge, whether or not that ring is shown. Records
--- the settings version, so `update` only calls it again after a change.
+-- outside it, measured between the segments' edges, with its own thickness. The stack labels start
+-- the same distance right of the outer ring's outer edge as the time labels end left of it, whether
+-- or not that ring is shown, each moved by its label's offset settings; the inner ring's labels sit
+-- below the horizontal axis and the outer ring's above it. Records the settings version, so
+-- `update` only calls it again after a change.
 -- tab: settings `mod._settings`
 HudElementPerfectKeystones._apply_display_settings = function (self, settings)
     self._applied_settings_version = mod._settings_version
@@ -681,12 +749,22 @@ HudElementPerfectKeystones._apply_display_settings = function (self, settings)
 
     self._near_threshold = math_clamp(_number_setting(settings, "near_expiry_threshold"), 0, 100) / 100
 
+    local stack_x = label_x + _number_setting(settings, "stack_label_offset_x")
+    local stack_y = _number_setting(settings, "stack_label_offset_y")
+    local time_x = -label_x - LABEL_WIDTH + _number_setting(settings, "time_label_offset_x")
+    local time_y = _number_setting(settings, "time_label_offset_y")
+
     for slot_index = 1, #slots do
         local slot = slots[slot_index]
-        local label_offset = slot.widget.style.label.offset
+        local style = slot.widget.style
+        local stack_offset = style[STACK_LABEL_ID].offset
+        local time_offset = style[TIME_LABEL_ID].offset
+        local row_y = slot_index == SLOT_INNER and 1 or -1 - LABEL_HEIGHT
 
-        label_offset[1] = label_x
-        label_offset[2] = slot_index == SLOT_INNER and 1 or -1 - LABEL_HEIGHT
+        stack_offset[1] = stack_x
+        stack_offset[2] = row_y + stack_y
+        time_offset[1] = time_x
+        time_offset[2] = row_y + time_y
         slot.pulse_remaining = 0
 
         self:_apply_geometry(slot, 1)
