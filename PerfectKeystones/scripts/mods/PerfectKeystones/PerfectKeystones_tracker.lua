@@ -142,6 +142,7 @@ local function _compile_entry(data, entry)
         gate = entry.gate,
         gate_setting = entry.gate_setting,
         settle = entry.settle or 0,
+        hide_at_zero = entry.hide_at_zero or false,
         animate_gains = entry.animate_gains or false,
         restore_progress = entry.restore_progress or false,
         restore_setting = entry.restore_setting,

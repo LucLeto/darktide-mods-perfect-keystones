@@ -514,40 +514,37 @@ Kinds.stack_shared = function (tracked, state, ctx)
     _timed_stacks(tracked, state, ctx, HIGHLIGHT_SHARED)
 end
 
---- `stack_discrete`: held stacks in whole steps, without a timer.
--- Shown while above zero, or, for an entry with a visibility setting, below its maximum (zero
--- included) or always; a deficit is held back for the entry's settle time after its stack buff
--- appears. An `animate_gains` entry sweeps gained stacks in and, below the maximum, keeps its full
--- ring for `FULL_HOLD_DURATION` after the last stack returned; with `restore_progress` it also
--- fills the next stack's share over its restore interval (see `_show_refill`). An entry with a gate
--- setting additionally needs its gate condition when that setting is on. A missing buff or maximum
--- is not a zero count and hides the ring.
+--- Notes the stack buff instance an entry reads this frame; a different instance, or none, restarts
+-- its settle time and forgets its observed count history.
 -- tab: tracked compiled tracking entry
--- tab: state presentation state
--- tab: ctx frame context
-Kinds.stack_discrete = function (tracked, state, ctx)
-    local buff = _first(ctx.found, tracked.buffs)
-    local t = ctx.t
-
+-- ?tab: buff stack buff instance
+-- number: t latest fixed-step time
+local function _note_stack_buff(tracked, buff, t)
     if buff ~= tracked.seen_buff then
         tracked.seen_buff = buff
         tracked.seen_t = t
 
         _forget_refill(tracked)
     end
+end
 
-    local count, cap
-
-    if buff then
-        count, cap = _count_and_cap(tracked, buff, ctx)
-    end
-
-    if not count then
-        _hide(state)
-
-        return
-    end
-
+--- Shows a held count by the entry's visibility rules, or hides the ring.
+-- Without a visibility setting, the count is shown while above zero. With one, it is shown below
+-- the maximum (zero included) or always; a `hide_at_zero` entry hides at zero in both modes. A
+-- deficit is held back for the entry's settle time after its stack buff appears. An
+-- `animate_gains` entry sweeps gained stacks in and, below the maximum, keeps its full ring for
+-- `FULL_HOLD_DURATION` after the last stack returned; with `restore_progress` it also fills the
+-- next stack's share over its restore interval (see `_show_refill`). An entry with a gate setting
+-- additionally needs its gate condition when that setting is on.
+-- tab: tracked compiled tracking entry
+-- tab: state presentation state
+-- tab: ctx frame context
+-- tab: buff stack buff instance
+-- int: count held stacks
+-- int: cap effective maximum
+-- string: phase `PHASE_HELD` or `PHASE_BUILDING`
+local function _show_held(tracked, state, ctx, buff, count, cap, phase)
+    local t = ctx.t
     local animate_gains = tracked.animate_gains
 
     if animate_gains then
@@ -555,22 +552,20 @@ Kinds.stack_discrete = function (tracked, state, ctx)
     end
 
     local settings = ctx.settings
-    local visible
     local visibility_setting = tracked.visibility_setting
+    local visible
 
-    if visibility_setting then
-        if settings[visibility_setting] == VISIBILITY_ALWAYS then
-            visible = true
-        elseif count < cap then
-            visible = t - tracked.seen_t >= tracked.settle
-        else
-            -- Starting stacks arriving during the settle time get no full hold either.
-            local full_t = tracked.full_t
-
-            visible = full_t ~= nil and t - full_t < FULL_HOLD_DURATION and full_t - tracked.seen_t >= tracked.settle
-        end
+    if count <= 0 and (tracked.hide_at_zero or not visibility_setting) then
+        visible = false
+    elseif not visibility_setting or settings[visibility_setting] == VISIBILITY_ALWAYS then
+        visible = true
+    elseif count < cap then
+        visible = t - tracked.seen_t >= tracked.settle
     else
-        visible = count > 0
+        -- Starting stacks arriving during the settle time get no full hold either.
+        local full_t = tracked.full_t
+
+        visible = full_t ~= nil and t - full_t < FULL_HOLD_DURATION and full_t - tracked.seen_t >= tracked.settle
     end
 
     if visible and tracked.gate == GATE_BLITZ_WIELDED and settings[tracked.gate_setting] then
@@ -585,17 +580,43 @@ Kinds.stack_discrete = function (tracked, state, ctx)
         return
     end
 
-    _show_stacks(state, PHASE_HELD, count, cap)
+    _show_stacks(state, phase, count, cap)
 
     if animate_gains then
         _show_refill(tracked, state, ctx, buff, count, cap)
     end
 end
 
+--- `stack_discrete`: held stacks in whole steps, without a timer, shown by the entry's visibility
+-- rules (see `_show_held`). A missing buff or maximum is not a zero count and hides the ring.
+-- tab: tracked compiled tracking entry
+-- tab: state presentation state
+-- tab: ctx frame context
+Kinds.stack_discrete = function (tracked, state, ctx)
+    local buff = _first(ctx.found, tracked.buffs)
+
+    _note_stack_buff(tracked, buff, ctx.t)
+
+    local count, cap
+
+    if buff then
+        count, cap = _count_and_cap(tracked, buff, ctx)
+    end
+
+    if not count then
+        _hide(state)
+
+        return
+    end
+
+    _show_held(tracked, state, ctx, buff, count, cap, PHASE_HELD)
+end
+
 --- `hybrid`: an actual timed active buff takes priority and shows its remaining time; otherwise
--- the held resource is shown in whole steps while above zero. The resource keeps being read while
--- the active phase hides it, and is shown directly once that phase ends. An entry with `by_slot`
--- shows the resource of the wielded slot, and none in other slots.
+-- the held resource is shown in whole steps by the entry's visibility rules (see `_show_held`),
+-- above zero without a visibility setting. The resource keeps being read while the active phase
+-- hides it, and is shown directly once that phase ends. An entry with `by_slot` shows the resource
+-- of the wielded slot, and none in other slots.
 -- tab: tracked compiled tracking entry
 -- tab: state presentation state
 -- tab: ctx frame context
@@ -616,10 +637,12 @@ Kinds.hybrid = function (tracked, state, ctx)
         local inventory_component = ctx.inventory_component
         local index = inventory_component and by_slot[inventory_component.wielded_slot]
 
-        buff = index and found[index]
+        buff = index and found[index] or nil
     else
         buff = _first(found, tracked.buffs)
     end
+
+    _note_stack_buff(tracked, buff, ctx.t)
 
     local count, cap
 
@@ -627,11 +650,13 @@ Kinds.hybrid = function (tracked, state, ctx)
         count, cap = _count_and_cap(tracked, buff, ctx)
     end
 
-    if count and count > 0 then
-        _show_stacks(state, PHASE_BUILDING, count, cap)
-    else
+    if not count then
         _hide(state)
+
+        return
     end
+
+    _show_held(tracked, state, ctx, buff, count, cap, PHASE_BUILDING)
 end
 
 --- `proc_cooldown`: a proc's active protection as a countdown, then, with the entry's cooldown

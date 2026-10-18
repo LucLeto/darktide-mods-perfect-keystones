@@ -167,6 +167,54 @@ local VISIBILITY_TOOLTIP = {
     ["zh-tw"] = "低於最大值：僅在層數不足（包括為零）時顯示。始終：滿層時也顯示。僅改變顯示與否。",
 }
 
+--- Tooltip of the visibility setting of keystones that stay hidden at zero.
+local HIDE_AT_ZERO_VISIBILITY_TOOLTIP = {
+    en = "Always: shown from the first stack up to and including the maximum. Below maximum: hidden again a moment after the maximum is reached. Hidden at zero either way. Changing it only changes visibility.",
+    fr = "Toujours : affiché dès le premier cumul, maximum compris. Sous le maximum : de nouveau masqué un instant après avoir atteint le maximum. Masqué à zéro dans les deux cas. Ce réglage ne change que la visibilité.",
+    de = "Immer: sichtbar ab dem ersten Stapel bis einschließlich Maximum. Unter Maximum: verschwindet kurz nach Erreichen des Maximums wieder. Bei null in beiden Fällen ausgeblendet. Ändert nur die Sichtbarkeit.",
+    it = "Sempre: visibile dal primo cumulo fino al massimo compreso. Sotto il massimo: scompare di nuovo poco dopo aver raggiunto il massimo. Nascosto a zero in entrambi i casi. Cambia solo la visibilità.",
+    es = "Siempre: se muestra desde la primera acumulación hasta el máximo incluido. Bajo el máximo: se vuelve a ocultar poco después de alcanzar el máximo. Oculto en cero en ambos casos. Solo cambia la visibilidad.",
+    pl = "Zawsze: widoczny od pierwszego ładunku aż do maksimum włącznie. Poniżej maksimum: znika chwilę po osiągnięciu maksimum. W obu przypadkach ukryty przy zerze. Zmienia tylko widoczność.",
+    ["pt-br"] = "Sempre: aparece a partir do primeiro acúmulo até o máximo, inclusive. Abaixo do máximo: some de novo pouco depois de atingir o máximo. Oculto em zero nos dois casos. Muda apenas a visibilidade.",
+    ru = "Всегда: показывается с первого заряда до максимума включительно. Ниже максимума: снова скрывается вскоре после достижения максимума. При нуле скрыто в обоих случаях. Меняет только видимость.",
+    ja = "常に：最初のスタックから最大まで表示します。最大未満：最大に達すると少しして再び非表示になります。ゼロのときはどちらでも非表示です。表示だけが変わります。",
+    ko = "항상: 첫 중첩부터 최대까지 표시합니다. 최대 미만: 최대에 도달하면 잠시 후 다시 숨깁니다. 0일 때는 두 경우 모두 숨겨집니다. 표시 여부만 바뀝니다.",
+    ["zh-cn"] = "始终：从第一层起显示，包括满层。低于最大值：达到满层片刻后再次隐藏。为零时两种情况都隐藏。仅改变显示与否。",
+    ["zh-tw"] = "始終：從第一層起顯示，包括滿層。低於最大值：達到滿層片刻後再次隱藏。為零時兩種情況都隱藏。僅改變顯示與否。",
+}
+
+--- Sentence added to the hide-at-zero visibility tooltip of a keystone with an active countdown.
+local COUNTDOWN_ALWAYS_SHOWN = {
+    en = " The active buff's countdown is shown either way.",
+    fr = " Le compte à rebours de l'effet actif est affiché dans les deux cas.",
+    de = " Der Countdown des aktiven Effekts wird in beiden Fällen angezeigt.",
+    it = " Il conto alla rovescia dell'effetto attivo è mostrato in entrambi i casi.",
+    es = " La cuenta atrás del efecto activo se muestra en ambos casos.",
+    pl = " Odliczanie aktywnego efektu jest pokazywane w obu przypadkach.",
+    ["pt-br"] = " A contagem regressiva do efeito ativo aparece nos dois casos.",
+    ru = " Обратный отсчёт активного эффекта показывается в обоих случаях.",
+    ja = "発動中の効果のカウントダウンはどちらでも表示されます。",
+    ko = " 활성 효과의 카운트다운은 두 경우 모두 표시됩니다.",
+    ["zh-cn"] = "激活效果的倒计时在两种情况下都会显示。",
+    ["zh-tw"] = "啟動效果的倒數在兩種情況下都會顯示。",
+}
+
+--- Returns a localization entry with a text appended to another entry, per language.
+-- tab: texts texts by language code
+-- tab: suffixes texts to append by language code
+-- treturn: tab texts by language code
+local function _appended(texts, suffixes)
+    local localization = {}
+
+    for i = 1, #LANGUAGES do
+        local language = LANGUAGES[i]
+
+        localization[language] = texts[language] .. suffixes[language]
+    end
+
+    return localization
+end
+
 --- Tooltip of every archetype group.
 local ARCHETYPE_GROUP_TOOLTIP = {
     en = "Choose which of this class's keystones show a ring. A ring only appears for a keystone that is part of your current build.",
@@ -802,6 +850,8 @@ local localization = {
         ["zh-cn"] = "当前武器激活效果的剩余时间；否则显示为下一次切换武器储存的资源。效果期间获得的资源在效果结束前保持隐藏。",
         ["zh-tw"] = "目前武器啟動效果的剩餘時間；否則顯示為下一次切換武器儲存的資源。效果期間獲得的資源在效果結束前保持隱藏。",
     },
+    weapons_specialist_visibility = VISIBILITY_TITLE,
+    weapons_specialist_visibility_tooltip = _appended(HIDE_AT_ZERO_VISIBILITY_TOOLTIP, COUNTDOWN_ALWAYS_SHOWN),
     until_death_tooltip = {
         en = "In the thin outer ring: the protection countdown after the keystone saves you from death, then its cooldown in the cooldown color. Hidden while it is ready.",
         fr = "Dans le fin anneau extérieur : le compte à rebours de protection après que le talent clé vous a sauvé de la mort, puis sa recharge dans la couleur de recharge. Masqué lorsqu'il est prêt.",
@@ -872,6 +922,8 @@ local localization = {
         ["zh-cn"] = "按整层显示因缺失生命分段获得的层数，以基石天赋的最大层数为基准。",
         ["zh-tw"] = "按整層顯示因缺失生命分段獲得的層數，以基石天賦的最大層數為基準。",
     },
+    martyrdom_visibility = VISIBILITY_TITLE,
+    martyrdom_visibility_tooltip = HIDE_AT_ZERO_VISIBILITY_TOOLTIP,
     inexorable_judgement_tooltip = {
         en = "The resource you build before activation, in whole steps; once the keystone is active, its remaining time instead. Resource rebuilt meanwhile stays hidden until it ends.",
         fr = "La ressource accumulée avant l'activation, par paliers entiers ; une fois le talent clé actif, sa durée restante à la place. La ressource reconstituée entre-temps reste masquée jusqu'à la fin.",

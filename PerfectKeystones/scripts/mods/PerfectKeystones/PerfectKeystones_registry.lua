@@ -25,6 +25,8 @@
 -- `gate` condition the gate setting adds, one of the `GATE_*` values;
 -- `settle` seconds a below-maximum deficit is held back after the stack buff first appears, as the
 -- starting stacks reach a client over the network;
+-- `hide_at_zero` for an entry with a visibility setting: hidden at zero in both modes, so `Always`
+-- shows it from the first stack on and `Below maximum` between zero and the maximum;
 -- `animate_gains` for a below-maximum entry: newly gained stacks sweep in, and on reaching the
 -- maximum the full ring stays visible for a moment before it hides;
 -- `restore_progress` for stacks the game restores on a timer, one of the `RESTORE_*` values: the
@@ -179,7 +181,10 @@ Registry.ENTRIES = {
             slot_primary = "veteran_weapon_switch_ranged_visual",
             slot_secondary = "veteran_weapon_switch_melee_visual"
         },
-        cap = CAP_MAX_STACKS
+        cap = CAP_MAX_STACKS,
+        visibility_setting = "weapons_specialist_visibility",
+        hide_at_zero = true,
+        animate_gains = true
     },
     -- Zealot -----------------------------------------------------------------
     {
@@ -214,7 +219,10 @@ Registry.ENTRIES = {
         slot = SLOT_INNER,
         detect = { "zealot_martyrdom_base" },
         buffs = { "zealot_martyrdom_base" },
-        cap = CAP_TEMPLATE_DATA
+        cap = CAP_TEMPLATE_DATA,
+        visibility_setting = "martyrdom_visibility",
+        hide_at_zero = true,
+        animate_gains = true
     },
     {
         -- The active buff first, otherwise the held Momentum (child stacks without the baseline).
@@ -460,6 +468,12 @@ Registry.ENTRIES = {
 local EXTRA_SETTINGS = {
     focus_target = {
         { id = "focus_target_visibility", type = "dropdown", default_value = Registry.VISIBILITY_BELOW_MAX, options = VISIBILITY_OPTIONS }
+    },
+    weapons_specialist = {
+        { id = "weapons_specialist_visibility", type = "dropdown", default_value = Registry.VISIBILITY_ALWAYS, options = VISIBILITY_OPTIONS }
+    },
+    martyrdom = {
+        { id = "martyrdom_visibility", type = "dropdown", default_value = Registry.VISIBILITY_ALWAYS, options = VISIBILITY_OPTIONS }
     },
     until_death = {
         { id = "until_death_show_cooldown", type = "checkbox", default_value = true }
