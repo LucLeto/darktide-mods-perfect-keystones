@@ -58,6 +58,7 @@ local FULL_HOLD_DURATION = 1
 local GATE_BLITZ_WIELDED = Registry.GATE_BLITZ_WIELDED
 local VISIBILITY_ALWAYS = Registry.VISIBILITY_ALWAYS
 local DECAY_PROGRESSIVE = Registry.DECAY_PROGRESSIVE
+local RESTORE_CHILD_TEMPLATE = Registry.RESTORE_CHILD_TEMPLATE
 
 --- The kinds module table; kinds are stored by their registry kind id.
 local Kinds = {}
@@ -292,34 +293,63 @@ local function _observe_count(tracked, count, cap, t)
     tracked.observed_count = count
 end
 
---- Returns the restore progress of a parent buff's next child stack.
--- The game restores one child stack once the parent's `restore_child_duration` has passed since
--- its last removed and its last added stack, and keeps restarting that timer while the player is
--- knocked down. The timer is not sent to clients, so it is rebuilt here from the losses and gains
--- this client observed, which arrive with the same delay as the restored stack itself. Until a
--- change has been observed, or without the character state, the timer is unknown and no progress
--- is reported.
+--- Returns an entry's restore interval: the parent buff template's `restore_child_duration`, or
+-- the talent setting named by `restore_setting`, resolved once.
 -- tab: tracked compiled tracking entry
--- tab: buff parent buff instance
+-- tab: buff stack buff instance
+-- treturn: ?number interval in seconds
+local function _restore_interval(tracked, buff)
+    if tracked.restore_progress == RESTORE_CHILD_TEMPLATE then
+        local template = buff.template and buff:template()
+
+        return template and template.restore_child_duration
+    end
+
+    local interval = tracked.restore_interval
+
+    if interval == nil then
+        interval = tracked.restore_setting and Sources.talent_setting(tracked.restore_setting) or false
+        tracked.restore_interval = interval
+    end
+
+    return interval or nil
+end
+
+--- Returns the restore progress of an entry's next stack.
+-- The game restores one stack once the restore interval has passed since the last stack change:
+-- Feel No Pain's parent buff counts from its last removed and its last added child stack and keeps
+-- restarting while the player is knocked down; Focus Target! counts from its last gained stack
+-- and from a tag or kill that set its stacks. The timer is not sent to clients, so it is rebuilt
+-- here from the losses and gains this client observed, which arrive with the same delay as the
+-- restored stack itself. Until a change has been observed, the timer is unknown and no progress is
+-- reported; for a child template entry, the same holds without the character state.
+-- tab: tracked compiled tracking entry
+-- tab: buff stack buff instance
 -- tab: ctx frame context
 -- treturn: number progress from 0 to 1 toward the next restored stack
 -- treturn: ?number seconds until that stack, nil without progress
 -- treturn: ?number restore interval in seconds, nil without progress
 local function _restore_progress(tracked, buff, ctx)
-    local template = buff.template and buff:template()
-    local interval = template and template.restore_child_duration
-    local character_state_component = ctx.character_state_component
+    local interval = _restore_interval(tracked, buff)
 
-    if not is_positive(interval) or not character_state_component then
+    if not is_positive(interval) then
         return 0, nil, nil
     end
 
     local t = ctx.t
 
-    if PlayerUnitStatus.is_knocked_down(character_state_component) then
-        tracked.loss_t = t
+    if tracked.restore_progress == RESTORE_CHILD_TEMPLATE then
+        local character_state_component = ctx.character_state_component
 
-        return 0, nil, nil
+        if not character_state_component then
+            return 0, nil, nil
+        end
+
+        if PlayerUnitStatus.is_knocked_down(character_state_component) then
+            tracked.loss_t = t
+
+            return 0, nil, nil
+        end
     end
 
     local since = tracked.loss_t

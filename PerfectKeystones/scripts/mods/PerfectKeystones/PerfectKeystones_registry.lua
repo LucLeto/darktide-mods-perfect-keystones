@@ -27,9 +27,11 @@
 -- starting stacks reach a client over the network;
 -- `animate_gains` for a below-maximum entry: newly gained stacks sweep in, and on reaching the
 -- maximum the full ring stays visible for a moment before it hides;
--- `restore_progress` for a parent buff that restores child stacks on a timer: the share of the
--- next stack fills in the cooldown colour over the restore interval, rebuilt from observed losses
--- and gains, as the timer itself is not sent to clients;
+-- `restore_progress` for stacks the game restores on a timer, one of the `RESTORE_*` values: the
+-- share of the next stack fills in the cooldown colour over the restore interval, rebuilt from
+-- observed losses and gains, as the timer itself is not sent to clients;
+-- `restore_setting` with `RESTORE_TALENT_SETTING`: path of the interval in the game's
+-- `TalentSettings`;
 -- `decay_style` `DECAY_STABLE` (stable fill, next stack changes colour) or `DECAY_PROGRESSIVE`
 -- (next stack drains); every current stack-decay keystone has the confirmed stable style.
 --
@@ -85,6 +87,12 @@ Registry.VISIBILITY_ALWAYS = "always"
 --- Stack decay styles.
 Registry.DECAY_STABLE = "stable"
 Registry.DECAY_PROGRESSIVE = "progressive"
+
+--- Sources of a restore interval. `RESTORE_CHILD_TEMPLATE` the parent buff template's
+-- `restore_child_duration`, whose restoration the game pauses while the player is knocked down;
+-- `RESTORE_TALENT_SETTING` a value in the game's `TalentSettings`, named by `restore_setting`.
+Registry.RESTORE_CHILD_TEMPLATE = "child_template"
+Registry.RESTORE_TALENT_SETTING = "talent_setting"
 
 local KIND_DURATION = Registry.KIND_DURATION
 local KIND_STACK_DECAY = Registry.KIND_STACK_DECAY
@@ -142,6 +150,8 @@ Registry.ENTRIES = {
     },
     {
         -- Held tagging resource in the talent_resource component; the cap is set by the controller.
+        -- One stack is gained per stack time after the last change; shown below the maximum by
+        -- default.
         id = "focus_target",
         archetype = "veteran",
         talent = "veteran_improved_tag",
@@ -149,7 +159,12 @@ Registry.ENTRIES = {
         slot = SLOT_INNER,
         detect = { "veteran_improved_tag" },
         buffs = { "veteran_improved_tag" },
-        cap = CAP_TEMPLATE_DATA
+        cap = CAP_TEMPLATE_DATA,
+        visibility_setting = "focus_target_visibility",
+        settle = 0.5,
+        animate_gains = true,
+        restore_progress = Registry.RESTORE_TALENT_SETTING,
+        restore_setting = { "veteran", "veteran_tag", "stack_time" }
     },
     {
         -- The active buff of the wielded weapon first, otherwise the resource for the next switch.
@@ -250,7 +265,7 @@ Registry.ENTRIES = {
         visibility_setting = "feel_no_pain_visibility",
         settle = 0.5,
         animate_gains = true,
-        restore_progress = true
+        restore_progress = Registry.RESTORE_CHILD_TEMPLATE
     },
     -- Psyker -----------------------------------------------------------------
     {
@@ -443,6 +458,9 @@ Registry.ENTRIES = {
 --- Extra DMF settings, by entry id, nested under the entry's checkbox; without `setting_id` and
 -- `tooltip`, which `_extra_widget` adds.
 local EXTRA_SETTINGS = {
+    focus_target = {
+        { id = "focus_target_visibility", type = "dropdown", default_value = Registry.VISIBILITY_BELOW_MAX, options = VISIBILITY_OPTIONS }
+    },
     until_death = {
         { id = "until_death_show_cooldown", type = "checkbox", default_value = true }
     },

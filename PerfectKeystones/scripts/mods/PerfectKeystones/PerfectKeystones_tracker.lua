@@ -91,7 +91,8 @@ local Tracker = {}
 -- (`detect`, `buffs`, `active`, `by_slot`), its presentation `state` and its transition and debug
 -- bookkeeping (`selected`, `last_visible`, `last_phase`, `last_stacks`, `last_remaining`), plus
 -- `seen_buff`, `seen_t`, `valid_t` and the refill bookkeeping (`observed_count`, `gain_t`,
--- `loss_t`, `sweep_from`, `shown_held`, `full_t`) for the kinds.
+-- `loss_t`, `sweep_from`, `shown_held`, `full_t`, and `restore_interval`, resolved once) for the
+-- kinds.
 local ARCHETYPE_DATA = {}
 
 --- Largest watch index of any archetype; the size of the `found` table.
@@ -143,6 +144,8 @@ local function _compile_entry(data, entry)
         settle = entry.settle or 0,
         animate_gains = entry.animate_gains or false,
         restore_progress = entry.restore_progress or false,
+        restore_setting = entry.restore_setting,
+        restore_interval = nil,
         detect = _watch_indices(data, entry.detect),
         buffs = _watch_indices(data, entry.buffs),
         active = _watch_indices(data, entry.active),
