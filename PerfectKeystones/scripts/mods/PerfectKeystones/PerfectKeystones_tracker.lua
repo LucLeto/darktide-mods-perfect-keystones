@@ -61,6 +61,13 @@ local REFRESH_GAP = 0.5
 -- console log only, unless the player changed DMF's logging settings.
 local DEBUG_PREFIX = "[Perfect Keystones] "
 
+--- Game modes in which nothing is tracked: the Mourningstar and the prologue's hub, where talents
+-- are active but nothing is fought. Missions, the Psykhanium and the training grounds are tracked.
+local UNTRACKED_GAME_MODES = {
+    hub = true,
+    prologue_hub = true
+}
+
 local SLOT_INNER = Registry.SLOT_INNER
 local SLOT_OUTER = Registry.SLOT_OUTER
 local KIND_NONE = Registry.KIND_NONE
@@ -297,11 +304,22 @@ local function _reset_state()
     end
 end
 
+--- Returns whether the current game mode is one of `UNTRACKED_GAME_MODES`.
+-- treturn: bool
+local function _in_untracked_game_mode()
+    local state_managers = Managers.state
+    local game_mode_manager = state_managers and state_managers.game_mode
+    local game_mode_name = game_mode_manager and game_mode_manager.game_mode_name and game_mode_manager:game_mode_name()
+
+    return game_mode_name ~= nil and UNTRACKED_GAME_MODES[game_mode_name] == true
+end
+
 --- Binds to the HUD's player extensions of a new player unit.
--- Nothing is tracked when there is no unit, the archetype has no keystone in the registry or the
--- buff extension cannot be read. The inventory, talent resource and character state components are
--- optional; the keystones that need them hide without them, and without the character state
--- Feel No Pain shows no refill progress.
+-- Nothing is tracked when there is no unit, in a hub (`UNTRACKED_GAME_MODES`), when the archetype
+-- has no keystone in the registry or when the buff extension cannot be read. The game mode only
+-- changes along with the player unit, so it is checked here once. The inventory, talent resource
+-- and character state components are optional; the keystones that need them hide without them,
+-- and without the character state Feel No Pain shows no refill progress.
 -- ?tab: player_extensions the HUD's player extensions, with `unit_data`, `buff` and `ability`
 -- ?tab: player the HUD's player
 local function _bind(player_extensions, player)
@@ -310,6 +328,14 @@ local function _bind(player_extensions, player)
     state.extensions = player_extensions
 
     if not player_extensions then
+        return
+    end
+
+    if _in_untracked_game_mode() then
+        if mod._settings.debug_logging then
+            mod:info(DEBUG_PREFIX .. "not tracking in the hub")
+        end
+
         return
     end
 

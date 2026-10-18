@@ -36,7 +36,7 @@ Both rings are tracked and drawn independently: one never hides, replaces or res
 
 ## What it tracks
 
-Every value is read from the game while you play: stack counts, maximums and durations come from your actual buffs, so talent upgrades that raise a maximum or lengthen a timer are followed without a per-talent list. A keystone only shows a ring while it is part of your build, and only when its checkbox is on.
+Every value is read from the game while you play: stack counts, maximums and durations come from your actual buffs, so talent upgrades that raise a maximum or lengthen a timer are followed without a per-talent list. A keystone only shows a ring while it is part of your build, and only when its checkbox is on. The rings work in missions, the Psykhanium and the training grounds; in the Mourningstar, where your talents are active as well, they stay hidden.
 
 ### Tracking models
 
