@@ -34,6 +34,8 @@ Two classes can take a second keystone next to their main one. Each keystone the
 
 Both rings are tracked and drawn independently: one never hides, replaces or resets the other, and a ring that hides leaves the other exactly where it is. Every other class has one keystone and uses the inner ring only.
 
+Until Death and Lone Wolf each have a `Ring position` setting. Set to `Inner ring`, the second keystone swaps places with the main keystone, which then uses the outer ring. Each ring keeps its own size, thickness and label position.
+
 ## What it tracks
 
 Every value is read from the game while you play: stack counts, maximums and durations come from your actual buffs, so talent upgrades that raise a maximum or lengthen a timer are followed without a per-talent list. A keystone only shows a ring while it is part of your build, and only when its checkbox is on. The rings work in missions, the Psykhanium and the training grounds; in the Mourningstar, where your talents are active as well, they stay hidden.
@@ -160,10 +162,10 @@ One group per class, with a checkbox for each keystone that draws a ring, all on
 | Group | Keystones | Extra settings |
 | --- | --- | --- |
 | Veteran | Marksman's Focus, Focus Target!, Weapons Specialist | `Visibility` for Focus Target! (default Below maximum) and Weapons Specialist (default Always) |
-| Zealot | Until Death, Blazing Piety, Martyrdom, Inexorable Judgement | `Show cooldown` (on) for Until Death, `Visibility` (default Always) for Martyrdom |
+| Zealot | Until Death, Blazing Piety, Martyrdom, Inexorable Judgement | `Show cooldown` (on) and `Ring position` (default Outer ring) for Until Death, `Visibility` (default Always) for Martyrdom |
 | Ogryn | Heavy Hitter, Burst Limiter Override, Feel No Pain | `Visibility` (Below maximum / Always) for Feel No Pain |
 | Psyker | Warp Siphon, Disrupt Destiny, Empowered Psionics | `Only show with Blitz selected` (off) for Empowered Psionics |
-| Arbitrator | Execution Order, Terminus Warrant, Forceful, Lone Wolf | |
+| Arbitrator | Execution Order, Terminus Warrant, Forceful, Lone Wolf | `Ring position` (default Outer ring) for Lone Wolf |
 | Hive Scum | Vulture's Mark, Adrenaline Frenzy, Chemical Dependency | |
 | Skitarius | Redline Capacitors, Power Overload, Flensing Protocols | `Visibility` (Below maximum / Always) for Flensing Protocols |
 

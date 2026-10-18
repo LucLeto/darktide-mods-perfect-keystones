@@ -22,6 +22,8 @@
 -- `cap` where the effective maximum is read, one of the `CAP_*` values;
 -- `active` buff templates of a timed active phase (duration kind, and the active phase of a hybrid);
 -- `cooldown_setting`, `visibility_setting`, `gate_setting` ids of the entry's extra settings;
+-- `ring_setting` for an outer ring entry: id of its setting that can move it to the inner ring,
+-- swapping places with the main keystone;
 -- `gate` condition the gate setting adds, one of the `GATE_*` values;
 -- `settle` seconds a below-maximum deficit is held back after the stack buff first appears, as the
 -- starting stacks reach a client over the network;
@@ -124,6 +126,12 @@ Registry.ARCHETYPES = {
     { name = "cryptic", group = "cryptic_group" }
 }
 
+--- Dropdown options of the ring position settings; the values are the slot names.
+local RING_OPTIONS = {
+    { text = "ring_outer", value = Registry.SLOT_OUTER },
+    { text = "ring_inner", value = Registry.SLOT_INNER }
+}
+
 --- Dropdown options of the below-maximum visibility settings.
 local VISIBILITY_OPTIONS = {
     { text = "visibility_below_max", value = Registry.VISIBILITY_BELOW_MAX },
@@ -196,7 +204,8 @@ Registry.ENTRIES = {
         slot = SLOT_OUTER,
         detect = { "zealot_resist_death" },
         buffs = { "zealot_resist_death" },
-        cooldown_setting = "until_death_show_cooldown"
+        cooldown_setting = "until_death_show_cooldown",
+        ring_setting = "until_death_ring"
     },
     {
         -- The personal buff at full Fury first, otherwise the held Fury.
@@ -368,7 +377,8 @@ Registry.ENTRIES = {
         kind = KIND_REPLENISHMENT,
         slot = SLOT_OUTER,
         detect = { "adamant_grenade_replenishment" },
-        buffs = { "adamant_grenade_replenishment" }
+        buffs = { "adamant_grenade_replenishment" },
+        ring_setting = "lone_wolf_ring"
     },
     {
         -- Permanent companion specialisation: recognised, never drawn.
@@ -476,13 +486,17 @@ local EXTRA_SETTINGS = {
         { id = "martyrdom_visibility", type = "dropdown", default_value = Registry.VISIBILITY_ALWAYS, options = VISIBILITY_OPTIONS }
     },
     until_death = {
-        { id = "until_death_show_cooldown", type = "checkbox", default_value = true }
+        { id = "until_death_show_cooldown", type = "checkbox", default_value = true },
+        { id = "until_death_ring", type = "dropdown", default_value = Registry.SLOT_OUTER, options = RING_OPTIONS }
     },
     feel_no_pain = {
         { id = "feel_no_pain_visibility", type = "dropdown", default_value = Registry.VISIBILITY_BELOW_MAX, options = VISIBILITY_OPTIONS }
     },
     empowered_psionics = {
         { id = "empowered_psionics_blitz_only", type = "checkbox", default_value = false }
+    },
+    lone_wolf = {
+        { id = "lone_wolf_ring", type = "dropdown", default_value = Registry.SLOT_OUTER, options = RING_OPTIONS }
     },
     flensing_protocols = {
         { id = "flensing_protocols_visibility", type = "dropdown", default_value = Registry.VISIBILITY_BELOW_MAX, options = VISIBILITY_OPTIONS }

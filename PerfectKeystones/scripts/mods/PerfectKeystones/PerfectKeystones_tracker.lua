@@ -19,10 +19,11 @@
 -- parsing the profile. Talent variants and upgrades are read from the observed buff instances.
 --
 -- Each ring has a fixed owner: the inner ring the first selected and enabled main keystone, the
--- thin outer ring Until Death (Zealot) or Lone Wolf (Arbitrator), in registry order. The talent
--- trees allow only one main keystone per character, so ownership never alternates between frames,
--- and one ring hiding never moves or takes over the other. Go Get 'Em! and Unleashed Brutality
--- have no ring; their buffs are only watched for the debug output.
+-- thin outer ring Until Death (Zealot) or Lone Wolf (Arbitrator), in registry order; a second
+-- keystone whose ring position setting is the inner ring swaps places with the main keystone. The
+-- talent trees allow only one main keystone per character, so ownership never alternates between
+-- frames, and one ring hiding never moves or takes over the other. Go Get 'Em! and Unleashed
+-- Brutality have no ring; their buffs are only watched for the debug output.
 --
 -- Every keystone's state is derived from the game's current values each frame, with no timers of
 -- its own, so tracking never pauses or restarts while a ring is hidden, disabled or off screen.
@@ -138,6 +139,7 @@ local function _compile_entry(data, entry)
         cap = entry.cap,
         decay_style = entry.decay_style,
         cooldown_setting = entry.cooldown_setting,
+        ring_setting = entry.ring_setting,
         visibility_setting = entry.visibility_setting,
         gate = entry.gate,
         gate_setting = entry.gate_setting,
@@ -595,6 +597,13 @@ Tracker.refresh = function (player_extensions, player)
     end
 
     state.fresh = false
+
+    -- A second keystone set to the inner ring swaps places with the main keystone.
+    local ring_setting = outer and outer.ring_setting
+
+    if ring_setting and settings[ring_setting] == SLOT_INNER then
+        inner, outer = outer, inner
+    end
 
     local inner_state = inner and inner.state
     local outer_state = outer and outer.state
