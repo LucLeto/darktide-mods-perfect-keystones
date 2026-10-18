@@ -38,6 +38,7 @@ local RingSettings = mod._ring_settings
 local math_clamp = math.clamp
 local math_cos = math.cos
 local math_floor = math.floor
+local math_huge = math.huge
 local math_pi = math.pi
 local math_sin = math.sin
 local string_format = string.format
@@ -185,6 +186,13 @@ local function _set_color(target, source)
     target[4] = source[4]
 end
 
+--- Returns whether a value is a usable render scale, a finite number above zero.
+-- param: value value to check
+-- treturn: bool
+local function _is_scale(value)
+    return type(value) == "number" and value > 0 and value < math_huge
+end
+
 --- Returns a numeric setting, or its default when the setting is not a number.
 -- tab: settings `mod._settings`
 -- string: id setting id
@@ -314,6 +322,9 @@ HudElementPerfectKeystones.init = function (self, parent, draw_layer, start_scal
     self._crosshair_y = 0
     self._crosshair_pivot = { 0, 0 }
 
+    --- Resolution scale the segment geometry is snapped to whole screen pixels for.
+    self._pixel_scale = _is_scale(start_scale) and start_scale or 1
+
     --- Per-ring display state: geometry, pulse, the blended highlight colour and the render and
     -- label caches.
     self._slots = {}
@@ -403,9 +414,11 @@ local function _clear_render_cache(slot)
 end
 
 --- Updates both rings from the tracker once per frame.
--- Applies the settings after a change, asks the tracker for each ring's presentation state, hides
--- a ring without one, starts a ring's pulse on a frame its state reports a transition and the
--- `pulse` setting is on, redraws what changed and advances the pulses.
+-- Applies the settings after a change, or after the resolution scale changed, asks the tracker for
+-- each ring's presentation state, hides a ring without one, starts a ring's pulse on a frame its
+-- state reports a transition and the `pulse` setting is on, redraws what changed and advances the
+-- pulses. Without the HUD scale, `render_settings.scale` is the resolution scale the rings are
+-- drawn with.
 -- number: dt frame delta time
 -- number: t time
 -- tab: ui_renderer active UI renderer
@@ -415,8 +428,13 @@ HudElementPerfectKeystones.update = function (self, dt, t, ui_renderer, render_s
     HudElementPerfectKeystones.super.update(self, dt, t, ui_renderer, render_settings, input_service)
 
     local settings = mod._settings
+    local pixel_scale = render_settings and render_settings.scale
 
-    if mod._settings_version ~= self._applied_settings_version then
+    if _is_scale(pixel_scale) and pixel_scale ~= self._pixel_scale then
+        self._pixel_scale = pixel_scale
+
+        self:_apply_display_settings(settings)
+    elseif mod._settings_version ~= self._applied_settings_version then
         self:_apply_display_settings(settings)
     end
 
@@ -687,13 +705,26 @@ HudElementPerfectKeystones._refresh_labels = function (self, slot, ring_state, s
 end
 
 --- Positions and sizes every segment of a ring on its radius.
--- Each segment is a square of the ring's thickness, centred on the ring's radius.
+-- Each segment is a square of the ring's thickness, centred on the ring's radius. The renderer
+-- multiplies sizes and offsets by the resolution scale, so a square of a fractional pixel size, or
+-- at a fractional pixel distance from its neighbours, would cover a different number of pixels
+-- from square to square. The size is therefore rounded to whole screen pixels, at least one, and
+-- each square's offset from the ring centre to whole pixels too: every square then shares the
+-- centre's sub-pixel position and covers exactly the same pixels.
 -- tab: slot per-ring display state
 -- number: thickness_scale multiplier of the segment size, above 1 during a pulse
 HudElementPerfectKeystones._apply_geometry = function (self, slot, thickness_scale)
-    local radius = slot.radius
-    local segment_size = slot.thickness * thickness_scale
-    local half_size = segment_size * 0.5
+    local scale = self._pixel_scale
+    local inverse_scale = 1 / scale
+    local size_px = math_floor(slot.thickness * thickness_scale * scale + 0.5)
+
+    if size_px < 1 then
+        size_px = 1
+    end
+
+    local half_size_px = size_px * 0.5
+    local radius_px = slot.radius * scale
+    local segment_size = size_px * inverse_scale
     local widget = slot.widget
     local style = widget.style
 
@@ -704,8 +735,8 @@ HudElementPerfectKeystones._apply_geometry = function (self, slot, thickness_sca
 
         size[1] = segment_size
         size[2] = segment_size
-        offset[1] = radius * SEGMENT_COS[i] - half_size
-        offset[2] = radius * SEGMENT_SIN[i] - half_size
+        offset[1] = math_floor(radius_px * SEGMENT_COS[i] - half_size_px + 0.5) * inverse_scale
+        offset[2] = math_floor(radius_px * SEGMENT_SIN[i] - half_size_px + 0.5) * inverse_scale
     end
 
     widget.dirty = true
