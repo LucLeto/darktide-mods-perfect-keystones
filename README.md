@@ -73,7 +73,7 @@ Every value is read from the game while you play: stack counts, maximums and dur
 | Arbitrator | Execution Order | The personal buff's remaining time; marks, the Cyber-Mastiff's buff and permanent stacks do not count | While the buff runs |
 | Arbitrator | Terminus Warrant | The active melee or ranged effect's remaining time; otherwise the stacks stored for your next weapon switch | With an effect or stacks |
 | Arbitrator | Forceful | Held stacks (10); the next stack's share warns before it decays | With stacks |
-| Arbitrator | Lone Wolf | Outer ring: the time until your next automatic Blitz charge (45 s for grenades, 90 s for the Shock Mine) | While charges are missing |
+| Arbitrator | Lone Wolf | Outer ring: the time until your next automatic Blitz charge (45 s for grenades, 90 s for the Shock Mine) | While charges are missing, except while you are captured |
 | Arbitrator | Go Get 'Em!, Unleashed Brutality | Nothing: Cyber-Mastiff keystones with nothing to track | Never |
 | Hive Scum | Vulture's Mark | Held stacks (3); the filled segments turn red-orange one by one as the shared timer (8 s, or 12 s with the upgrade) runs down | With stacks |
 | Hive Scum | Adrenaline Frenzy | Build-up stacks (30) before Frenzy; while Frenzy runs, its remaining time | With stacks or Frenzy |
