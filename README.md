@@ -38,7 +38,7 @@ Until Death and Lone Wolf each have a `Ring position` setting. Set to `Inner rin
 
 ## What it tracks
 
-Every value is read from the game while you play: stack counts, maximums and durations come from your actual buffs, so talent upgrades that raise a maximum or lengthen a timer are followed without a per-talent list. A keystone only shows a ring while it is part of your build, and only when its checkbox is on. The rings work in missions, the Psykhanium and the training grounds; in the Mourningstar, where your talents are active as well, they stay hidden.
+Every value is read from the game while you play: stack counts, maximums and durations come from your actual buffs, so talent upgrades that raise a maximum or lengthen a timer are followed without a per-talent list. A keystone only shows a ring while it is part of your build, and only when its checkbox is on. The rings work in missions, the Psykhanium and the training grounds; in the Mourningstar, where your talents are active as well, they stay hidden. While you are captured and wait to be rescued, both rings hide, as the game's own ability displays do, and return once you are free.
 
 ### Tracking models
 
@@ -73,7 +73,7 @@ Every value is read from the game while you play: stack counts, maximums and dur
 | Arbitrator | Execution Order | The personal buff's remaining time; marks, the Cyber-Mastiff's buff and permanent stacks do not count | While the buff runs |
 | Arbitrator | Terminus Warrant | The active melee or ranged effect's remaining time; otherwise the stacks stored for your next weapon switch | With an effect or stacks |
 | Arbitrator | Forceful | Held stacks (10); the next stack's share warns before it decays | With stacks |
-| Arbitrator | Lone Wolf | Outer ring: the time until your next automatic Blitz charge (45 s for grenades, 90 s for the Shock Mine) | While charges are missing, except while you are captured |
+| Arbitrator | Lone Wolf | Outer ring: the time until your next automatic Blitz charge (45 s for grenades, 90 s for the Shock Mine) | While charges are missing |
 | Arbitrator | Go Get 'Em!, Unleashed Brutality | Nothing: Cyber-Mastiff keystones with nothing to track | Never |
 | Hive Scum | Vulture's Mark | Held stacks (3); the filled segments turn red-orange one by one as the shared timer (8 s, or 12 s with the upgrade) runs down | With stacks |
 | Hive Scum | Adrenaline Frenzy | Build-up stacks (30) before Frenzy; while Frenzy runs, its remaining time | With stacks or Frenzy |
