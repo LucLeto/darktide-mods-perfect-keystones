@@ -5,7 +5,7 @@ It tracks 23 keystones across all seven classes. Go Get 'Em! and Unleashed Bruta
 
 The mod is purely visual. It never changes buffs, procs, cooldowns or inputs, and it hooks no game function: it only reads your character's buffs, its talent resource and inventory, and your Blitz charges.
 
-The ring style follows [Perfect Thrust](https://github.com/LucLeto/darktide-mods-perfect-thrust), and both mods can run at the same time (see [Perfect Thrust](#perfect-thrust)).
+The ring style follows [Perfect Thrust](https://github.com/LucLeto/darktide-mods-perfect-thrust), and both mods can run at the same time (see [Perfect Thrust](#perfect-thrust)). With [UI Throttle](https://www.nexusmods.com/warhammer40kdarktide/mods/1386) installed, the rings keep updating every frame (see [UI Throttle](#ui-throttle)).
 
 ## Display
 
@@ -187,6 +187,12 @@ Each colour has its own picker with an alpha channel, from 0 (invisible) to 255 
 ## Perfect Thrust
 
 Perfect Keystones and Perfect Thrust are separate mods and can be enabled together without changes to either. Perfect Thrust's ring has a 32 px radius by default; Perfect Keystones' inner ring defaults to 40 px and its outer ring to about 48 px, so all rings fit around the crosshair without touching, also while they pulse. If you enlarge Perfect Thrust's ring, raise `Ring size` accordingly, or move one of them with the offsets.
+
+## UI Throttle
+
+[UI Throttle](https://www.nexusmods.com/warhammer40kdarktide/mods/1386) saves CPU time by refreshing most HUD elements on a schedule, 30 times a second by default, instead of every frame. Perfect Keystones opts out of it, so with UI Throttle installed the rings still update every frame: countdowns run smoothly, stack changes show in the frame they happen, and the expiring colour and pulses come on time, the same as without UI Throttle. Nothing needs to be set up in either mod, and the rings do not need to go on UI Throttle's protected element list.
+
+For modders: the HUD element sets UI Throttle's `_ui_throttle_exempt` flag when it is created; no game or UI Throttle function is hooked.
 
 ## Debug output
 
